@@ -32,4 +32,9 @@ object Common extends AutoPlugin {
     ),
     scalacOptions in Test ++= Seq("-Yrangepos")
   )
+
+  def databaseUrl = sys.env.getOrElse("DB_DEFAULT_URL", "jdbc:postgresql://localhost:5432/lunatech")
+  def databaseUser = sys.env.getOrElse("DB_DEFAULT_PASSWORD", "lunatech")
+  def databasePassword = sys.env.getOrElse("DB_DEFAULT_USER", "assignment")
+  def databaseSchemas = Seq("lunatech")
 }

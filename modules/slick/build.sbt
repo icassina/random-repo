@@ -12,14 +12,10 @@ libraryDependencies ++= Seq(
   "com.github.tototoshi" %% "slick-joda-mapper" % "2.1.0"
 )
 
-lazy val databaseUrl = sys.env.getOrElse("DB_DEFAULT_URL", "jdbc:postgresql:lunatech")
-lazy val databaseUser = sys.env.getOrElse("DB_DEFAULT_USER", "lunatech")
-lazy val databasePassword = sys.env.getOrElse("DB_DEFAULT_PASSWORD", "assignment")
-
 slickCodegenSettings
-slickCodegenDatabaseUrl := databaseUrl
-slickCodegenDatabaseUser := databaseUser
-slickCodegenDatabasePassword := databasePassword
+slickCodegenDatabaseUrl := Common.databaseUrl
+slickCodegenDatabaseUser := Common.databaseUser
+slickCodegenDatabasePassword := Common.databasePassword
 slickCodegenDriver := slick.driver.PostgresDriver
 slickCodegenJdbcDriver := "org.postgresql.Driver"
 slickCodegenOutputPackage := "com.example.user.slick"
