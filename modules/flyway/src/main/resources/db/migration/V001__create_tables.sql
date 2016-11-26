@@ -83,9 +83,10 @@ CREATE TABLE airports (
   UNIQUE (ident)
 );
 SELECT AddGeometryColumn('lunatech', 'airports', 'position', 4326, 'POINT', 2);
+CREATE INDEX airports_iso_country_idx ON airports (iso_country);
 CREATE INDEX airports_keywords_idx ON airports USING gist(keywords);
 
-CREATE TABLE runaways (
+CREATE TABLE runways (
   id                        INTEGER       NOT NULL,
   airport_ref               INTEGER       NOT NULL,
   length_ft                 INTEGER,
@@ -96,17 +97,18 @@ CREATE TABLE runaways (
   closed                    BOOLEAN       NOT NULL,
   le_ident                  VARCHAR(8),
   le_elevation_ft           INTEGER,
-  le_heading_degt           NUMERIC(7, 1),
+  le_heading_degt           NUMERIC(8, 1),
   le_displaced_threshold_ft INTEGER,
   he_ident                  VARCHAR(8),
   he_elevation_ft           INTEGER,
-  he_heading_degt           NUMERIC(7, 1),
+  he_heading_degt           NUMERIC(8, 1),
   he_displaced_threshold_ft INTEGER,
 
   PRIMARY KEY (id),
   FOREIGN KEY (airport_ref) REFERENCES airports (id)
 );
-SELECT AddGeometryColumn('lunatech', 'runaways', 'le_position', 4326, 'POINT', 2);
-SELECT AddGeometryColumn('lunatech', 'runaways', 'he_position', 4326, 'POINT', 2);
-CREATE INDEX runaways_surface_idx ON runaways (surface);
-CREATE INDEX runaways_surface_std_idx ON runaways (surface_std);
+SELECT AddGeometryColumn('lunatech', 'runways', 'le_position', 4326, 'POINT', 2);
+SELECT AddGeometryColumn('lunatech', 'runways', 'he_position', 4326, 'POINT', 2);
+CREATE INDEX runways_surface_idx ON runways (surface);
+CREATE INDEX runways_surface_std_idx ON runways (surface_std);
+CREATE INDEX runways_le_ident_idx ON runways (le_ident);

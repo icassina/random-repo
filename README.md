@@ -34,7 +34,6 @@ EOF
 
 cat << EOF | psql -U postgres -d lunatech
   CREATE EXTENSION "postgis";
+  CREATE EXTENSION "pg_trgm"; -- for fuzzy search
 EOF
 ```
-
-
