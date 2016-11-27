@@ -7,9 +7,9 @@ CREATE VIEW view_airports AS (
     a.name                  AS name,
     a.position              AS position,
     a.elevation_ft          AS elevation_ft,
-    c.continent             AS continent,
     a.iso_country           AS iso_country,
     c.name                  AS country_name,
+    c.continent             AS continent,
     a.iso_region            AS iso_region,
     a.municipality          AS municipality,
     a.scheduled_service     AS scheduled_service,
@@ -28,9 +28,9 @@ CREATE VIEW view_runways AS (
     r.id                            AS id,
     r.airport_ref                   AS airport_ref,
     a.ident                         AS airport_ident,
-    c.continent                     AS continent,
     a.iso_country                   AS iso_country,
     c.name                          AS country_name,
+    c.continent                     AS continent,
     r.length_ft                     AS length_ft,
     r.width_ft                      AS width_ft,
     r.surface                       AS surface,
@@ -52,29 +52,31 @@ CREATE VIEW view_runways AS (
   INNER JOIN countries AS c ON a.iso_country = c.code
 );
 
-CREATE VIEW view_airport_and_runways_count_by_country AS (
+CREATE VIEW view_airports_and_runways_count_by_country AS (
   SELECT
-    a.iso_country   AS iso_country,
-    a.country_name  AS country_name,
-    count(a.*)      AS airports,
-    count(r.*)      AS runways
+    a.iso_country             AS iso_country,
+    a.country_name            AS country_name,
+    a.continent               AS continent,
+    count(a.*)                AS airports,
+    count(r.*)                AS runways
   FROM view_airports AS a
   LEFT OUTER JOIN view_runways AS r ON a.id = r.airport_ref
-  GROUP BY a.iso_country, a.country_name
+  GROUP BY a.iso_country, a.country_name, a.continent
 );
 
-CREATE VIEW view_runway_surface_by_country AS (
+CREATE VIEW view_runway_surfaces_by_country AS (
   SELECT
     iso_country   AS iso_country,
     country_name  AS country_name,
+    continent     AS continent,
     surface       AS surface,
     count(*)      AS runways
   FROM view_runways
-  GROUP BY iso_country, country_name, surface
+  GROUP BY iso_country, country_name, continent, surface
   ORDER BY iso_country ASC, runways DESC, surface ASC
 );
 
-CREATE VIEW view_le_ident AS (
+CREATE VIEW view_le_idents AS (
   SELECT
     le_ident    AS le_ident,
     count(*)    AS count

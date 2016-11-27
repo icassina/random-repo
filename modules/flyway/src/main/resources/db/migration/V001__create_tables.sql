@@ -83,6 +83,7 @@ CREATE TABLE airports (
   UNIQUE (ident)
 );
 SELECT AddGeometryColumn('lunatech', 'airports', 'position', 4326, 'POINT', 2);
+ALTER TABLE airports ALTER COLUMN position SET NOT NULL;
 CREATE INDEX airports_iso_country_idx ON airports (iso_country);
 CREATE INDEX airports_keywords_idx ON airports USING gist(keywords);
 
