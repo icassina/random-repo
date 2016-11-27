@@ -1,0 +1,53 @@
+@main("Lunatech Assignment - Query", css = List("lib/openlayers/ol.css"), scripts = List("lib/openlayers/ol.js", "lib/jquery/jquery.js")) {
+  <div class="row">
+    <div class="col-md-3">
+      <div class="row">
+        <div class="col-md-12">
+          <div class="panel panel-info">
+            <div class="panel-heading">
+              <h5>Country</h5>
+            </div>
+            <ol id="query-countries-results">
+            </ol>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-12">
+          <div class="panel panel-primary">
+            <div class="panel-heading">
+              <h5>Airports</h5>
+            </div>
+            <table class="table table-hover table-condensed">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Ident</th>
+                  <th>Name</th>
+                  <th>…</th>
+                </tr>
+              </thead>
+              <tbody id="query-airports-results">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-9">
+      <div id="map"></div>
+      <script src="@routes.Assets.versioned("js/query.js")" type="application/javascript"></script>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-12">
+      <div class="panel panel-success">
+        <div class="panel-heading">
+          <h5>Logs</h5>
+        </div>
+        <div class="panel-body">
+        </div>
+      </div>
+    </div>
+  </div>
+}

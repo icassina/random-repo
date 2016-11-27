@@ -1,0 +1,22 @@
+@(topId: Seq[(String, Int)])
+<div class="panel panel-primary">
+  <div class="panel-heading">
+    <h4>Most common runway identifiers</h4>
+  </div>
+  <table class="table table-condensed">
+    <thead>
+      <tr>
+        <th>Identifier</th>
+        <th>Runways</th>
+      </tr>
+    </thead>
+    <tbody>
+    @topId.map { case (ident, count) =>
+      <tr>
+        <td><b>@ident</b></td>
+        <td><b>@count</b></td>
+      </tr>
+    }
+    </tbody>
+  </table>
+</div>

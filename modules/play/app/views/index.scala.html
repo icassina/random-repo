@@ -1,18 +1,35 @@
 @(countries: Int, airports: Int, runways: Int)
 
 @main("Lunatech Assignment Home Page") {
-  <h2>Status</h2>
-
-  <div>
-    <span class="label">Countries:</span>
-    <span class="value">@countries</span>
-  </div>
-  <div>
-    <span class="label">Airports:</span>
-    <span class="value">@airports</span>
-  </div>
-  <div>
-    <span class="label">Runways:</span>
-    <span class="value">@runways</span>
+  <div class="row">
+    <div class="col-md-3">
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          Database Status
+        </div>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Table</th>
+              <th>Rows</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Countries</td>
+              <td>@countries</td>
+            </tr>
+            <tr>
+              <td>Airports</td>
+              <td>@airports</td>
+            </tr>
+            <tr>
+              <td>Runways</td>
+              <td>@runways</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 }

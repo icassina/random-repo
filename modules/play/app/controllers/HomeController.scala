@@ -36,4 +36,7 @@ class HomeController @Inject() (dao: DAO, daoEC: DAOExecutionContext) extends Co
     }
   }
 
+  def query = Action {
+    Ok(views.html.query())
+  }
 }

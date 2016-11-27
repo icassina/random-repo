@@ -1,0 +1,32 @@
+@(title: String, rank: Seq[(Country, Int)])
+<div class="panel panel-primary">
+  <div class="panel-heading">
+    <h4>@title</h4>
+  </div>
+  <table class="table table-condensed">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Code</th>
+        <th>Name</th>
+        <th>Airports</th>
+        <th>Continent</th>
+        <th>Wikipedia</th>
+        <th>Keywords</th>
+      </tr>
+    </thead>
+    <tbody>
+    @rank.map { case (country, airports) =>
+      <tr>
+        <td>@country.id</td>
+        <td>@country.code</td>
+        <td><b>@country.name</b></td>
+        <td><b>@airports</b></td>
+        <td>@country.continent</td>
+        <td><a href="@country.wikipediaLink">@country.wikipediaLink</a></td>
+        <td>@country.keywords</td>
+      </tr>
+    }
+    </tbody>
+  </table>
+</div>
