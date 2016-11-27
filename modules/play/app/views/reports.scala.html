@@ -1,0 +1,57 @@
+@(top10: Seq[(Country, Int)], low10: Seq[(Country, Int)], surf: Seq[(Country, String, Int)], topId: Seq[(String, Int)])
+
+@main("Lunatech Assignment Reports") {
+  <h2>Reports</h2>
+
+  <h3>Top 10 Countries having most airports</h3>
+    <ol>
+    @top10.map { case (country, airports) =>
+      <li><div>
+        <span>
+          @country.id @country.name [@country.code/@country.continent]
+        </span>
+        <span>
+          Airports: @airports
+        </span>
+      </div></li>
+    }
+    </ol>
+
+  <h3>Bottom 10 Countries having less airports</h3>
+    <ol>
+    @low10.map { case (country, airports) =>
+      <li><div>
+        <span>
+          @country.id @country.name [@country.code/@country.continent]
+        </span>
+        <span>
+          Airports: @airports
+        </span>
+      </div></li>
+    }
+    </ol>
+
+  <h3>Most common used runway surfaces identifiers, per country</h3>
+    <ol>
+    @surf.map { case (country, surface, runways) =>
+      <li><div>
+        <span>
+          [@country.code/@country.continent] @country.name
+        </span>
+        <span>
+          Surface: @surface, runways: @runways
+        </span>
+      </div></li>
+    }
+    </ol>
+
+  <h3>Top 10 common runway identifications</h3>
+  @topId.map { case (surface, count) =>
+    <div>
+      <span class="label">Surfcace ID:</span>
+      <span class="value">@surface</span>
+      <span class="label">Occurrences:</span>
+      <span class="value">@count</span>
+    </div>
+  }
+}

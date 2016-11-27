@@ -1,22 +1,18 @@
-@(users: Seq[User])
+@(countries: Int, airports: Int, runways: Int)
 
-@main("Title Page") {
-    <h2>Users</h2>
+@main("Lunatech Assignment Home Page") {
+  <h2>Status</h2>
 
-    <table>
-        <tr>
-            <th>Id</th>
-            <th>Email</th>
-            <th>Created At</th>
-            <th>Updated At</th>
-        </tr>
-        @for(user <- users){
-            <tr>
-                <td>@user.id</td>
-                <td>@user.email</td>
-                <td>@user.createdAt</td>
-                <td>@user.updatedAt</td>
-            </tr>
-        }
-    </table>
+  <div>
+    <span class="label">Countries:</span>
+    <span class="value">@countries</span>
+  </div>
+  <div>
+    <span class="label">Airports:</span>
+    <span class="value">@airports</span>
+  </div>
+  <div>
+    <span class="label">Runways:</span>
+    <span class="value">@runways</span>
+  </div>
 }

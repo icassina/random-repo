@@ -22,8 +22,17 @@ class SlickDAO @Inject()(db: Database) extends DAO with Tables {
   override val profile: MyPostgresDriver = MyPostgresDriver
   import profile.api._
 
+  def stats(implicit ec: DAOExecutionContext): Future[(Int, Int, Int)] =
+    db.run(queries.stats.result)
+
   def airportsByCountry(implicit ec: DAOExecutionContext): Future[Seq[(Country, Int)]] =
     db.run(queries.countAirportsByCountry.result)
+
+  def topTenCountries(implicit ec: DAOExecutionContext): Future[Seq[(Country, Int)]] =
+    db.run(queries.countAirportsByCountry.sortBy(_._2.desc).take(10).result)
+
+  def bottomTenCountries(implicit ec: DAOExecutionContext): Future[Seq[(Country, Int)]] =
+    db.run(queries.countAirportsByCountry.sortBy(_._2.asc).take(10).result)
 
   def airportsAndRunwaysByCountry(implicit ec: DAOExecutionContext): Future[Seq[(Country, Int, Int)]] =
     db.run(queries.countAirportsAndRunwaysByCountry.result)
@@ -40,35 +49,43 @@ class SlickDAO @Inject()(db: Database) extends DAO with Tables {
   def lookupRunwaysByCountry(countryStr: String)(implicit ec: DAOExecutionContext): Future[Seq[Runway]] =
     db.run(queries.runwaysByCountry(countryStr))
 
+  def close() = Future.successful(db.close())
+
 
   object queries {
+    val stats = (
+      Countries.map(_.id).length,
+      Airports.map(_.id).length,
+      Runways.map(_.id).length
+    )
+
     val runwaysWithAirport: Query[(Runways, Airports), (Runway, Airport), Seq] =
-      (Runways join Airports)
+      (Runways join Airports on (_.airportRef === _.id))
 
     val airportsWithCountry: Query[(Airports, Countries), (Airport, Country), Seq] =
-      (Airports join Countries)
+      (Airports join Countries on (_.isoCountry === _.code))
 
     val runwaysWithAirportWithCountry: Query[((Runways, Airports), Countries), ((Runway, Airport), Country), Seq] =
-      (Runways join Airports join Countries)
+      (runwaysWithAirport join Countries on (_._2.isoCountry === _.code))
 
     val countAirportsByCountry: Query[(Countries, Rep[Int]), (Country, Int), Seq] =
       airportsWithCountry.groupBy(_._2).map { case (c, q) =>
-        (c, q.map(_._1.ident).countDistinct)
+        (c, q.map(_._1.ident).length)
       }
 
     val countAirportsAndRunwaysByCountry: Query[(Countries, Rep[Int], Rep[Int]), (Country, Int, Int), Seq] =
       runwaysWithAirportWithCountry.groupBy(_._2).map { case (c, q) =>
-        (c, q.map(_._1._1.id).countDistinct, q.map(_._1._2.ident).countDistinct)
+        (c, q.map(_._1._1.id).length, q.map(_._1._2.ident).length)
       }
 
     val countSurfacesByCountry: Query[(Countries, Rep[String], Rep[Int]), (Country, String, Int), Seq] =
       runwaysWithAirportWithCountry.groupBy { case ((r, a), c) => (c, r.surface.getOrElse("")) }.map { case ((c, s), q) =>
-        (c, s, q.map(_._1._1.id).countDistinct)
-      }
+        (c, s, q.map(_._1._1.id).length)
+      }.sortBy(_._3.desc)
 
     val countIdents =
       Runways.groupBy(_.leIdent.getOrElse("")).map { case (i, q) =>
-        (i, q.map(_.id).countDistinct)
+        (i, q.map(_.id).length)
       }.sortBy(_._2.desc)
 
     object fuzzy {

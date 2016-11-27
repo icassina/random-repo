@@ -9,12 +9,17 @@ import scala.math.BigDecimal
  * An implementation dependent DAO.  This could be implemented by Slick, Cassandra, or a REST API.
  */
 trait DAO {
+  def stats(implicit ec: DAOExecutionContext): Future[(Int, Int, Int)]
   def lookupAirportsByCountry(query: String)(implicit ec: DAOExecutionContext): Future[Seq[Airport]]
   def lookupRunwaysByCountry(query: String)(implicit ec: DAOExecutionContext): Future[Seq[Runway]]
   def airportsByCountry(implicit ec: DAOExecutionContext): Future[Seq[(Country, Int)]]
+  def topTenCountries(implicit ec: DAOExecutionContext): Future[Seq[(Country, Int)]]
+  def bottomTenCountries(implicit ec: DAOExecutionContext): Future[Seq[(Country, Int)]]
   def airportsAndRunwaysByCountry(implicit ec: DAOExecutionContext): Future[Seq[(Country, Int, Int)]]
   def runwaySurfacesByCountry(implicit ec: DAOExecutionContext): Future[Seq[(Country, String, Int)]]
   def topRunwayIdents(implicit ec: DAOExecutionContext): Future[Seq[(String, Int)]]
+
+  def close(): Future[Unit]
 }
 
 import Continents.Continent
