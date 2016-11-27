@@ -37,15 +37,6 @@ trait MyPostgresDriver extends ExPostgresDriver
     implicit val getContinent: GetResult[Continent] = GetResult(v => Continents.fromString(v.nextString))
     implicit val getAirportTypes: GetResult[AirportType] = GetResult(v => AirportTypes.fromString(v.nextString))
     implicit val getSurface: GetResult[Surface] = GetResult(v => Surfaces.fromString(v.nextString))
-
-    import icassina.lunatech.Country
-    implicit val getCountry: GetResult[Country] = GetResult(v =>
-      Country(
-        v.nextInt,
-        v.nextString, v.nextString, getContinent(v),
-        v.nextString, v.nextStringOption.map(_.split(",").toSeq.map(_.trim)).getOrElse(Seq.empty)
-      )
-    )
   }
 }
 

@@ -3,6 +3,7 @@ package icassina.lunatech
 import scala.concurrent.{ExecutionContext, Future}
 
 import com.vividsolutions.jts.geom.Point
+import scala.math.BigDecimal
 
 /**
  * An implementation dependent DAO.  This could be implemented by Slick, Cassandra, or a REST API.
@@ -26,7 +27,7 @@ case class Country(
   name:           String,
   continent:      Continent,
   wikipediaLink:  String,
-  keywords:       Seq[String]
+  keywords:       Option[String]
 )
 
 case class Airport(
@@ -36,7 +37,7 @@ case class Airport(
   name:             String,
   position:         Point,
   elevation:        Option[Int],
-  country:          Country,
+  isoCountry:       String,
   isoRegion:        String,
   municipality:     Option[String],
   scheduledService: Boolean,
@@ -45,27 +46,28 @@ case class Airport(
   localCode:        Option[String],
   homeLink:         Option[String],
   wikipediaLink:    Option[String],
-  keywords:         Seq[String]
+  keywords:         Option[String]
 )
 
 case class Runway(
-  id:                     Int,
-  airport:                Airport,
-  length_ft:              Option[Int],
-  surface:                Option[String],
-  surfaceStd:             Surface,
-  lighted:                Boolean,
-  closed:                 Boolean,
-  leIdent:                Option[String],
-  lePosition:             Option[Point],
-  leElevationFt:          Option[Int],
-  leHeadingDegT:          Option[Double],
-  leDisplacedThresholdFt: Option[Int],
-  heIdent:                Option[String],
-  hePosition:             Option[Point],
-  heElevationFt:          Option[Int],
-  heHeadingDegT:          Option[Double],
-  heDisplacedThresholdFt: Option[Int]
+  id:                   Int,
+  airportRef:           Int,
+  length:               Option[Int],
+  width:                Option[Int],
+  surface:              Option[String],
+  surfaceStd:           Surface,
+  lighted:              Boolean,
+  closed:               Boolean,
+  leIdent:              Option[String],
+  lePosition:           Option[Point],
+  leElevation:          Option[Int],
+  leHeading:            Option[BigDecimal],
+  leDisplacedThreshold: Option[Int],
+  heIdent:              Option[String],
+  hePosition:           Option[Point],
+  heElevation:          Option[Int],
+  heHeading:            Option[BigDecimal],
+  heDisplacedThreshold: Option[Int]
 )
 
 

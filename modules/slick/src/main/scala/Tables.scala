@@ -20,9 +20,7 @@ trait Tables {
   import com.vividsolutions.jts.geom.Geometry
   import com.vividsolutions.jts.geom.Point
 
-  import icassina.lunatech.Continents
-  import icassina.lunatech.AirportTypes
-  import icassina.lunatech.Surfaces
+  import icassina.lunatech._
   import Continents.Continent
   import AirportTypes.AirportType
   import Surfaces.Surface
@@ -31,20 +29,11 @@ trait Tables {
   def schema: profile.SchemaDescription = Airports.schema ++ Countries.schema ++ Runways.schema
   def ddl = schema
 
-  case class CountriesRow(
-    id:             Int,
-    code:           String,
-    name:           String,
-    continent:      Continent,
-    wikipediaLink:  String,
-    keywords:       Option[String] = None
-  )
-
-  implicit def GetResultCountriesRow(implicit e0: GR[Int], e1: GR[String], e2: GR[Option[String]]): GR[CountriesRow] = GR{
+  implicit def GetResultCountry(implicit e0: GR[Int], e1: GR[String], e2: GR[Option[String]]): GR[Country] = GR{
     prs => import prs._
-    CountriesRow.tupled((<<[Int], <<[String], <<[String], <<[Continent], <<[String], <<?[String]))
+    Country.tupled((<<[Int], <<[String], <<[String], <<[Continent], <<[String], <<?[String]))
   }
-  class Countries(_tableTag: Tag) extends Table[CountriesRow](_tableTag, Some("lunatech"), "countries") {
+  class Countries(_tableTag: Tag) extends Table[Country](_tableTag, Some("lunatech"), "countries") {
     val id:             Rep[Int]            = column[Int]           ("id",              O.PrimaryKey)
     val code:           Rep[String]         = column[String]        ("code",            O.Length(2,varying=false))
     val name:           Rep[String]         = column[String]        ("name",            O.Length(64,varying=true))
@@ -52,7 +41,7 @@ trait Tables {
     val wikipediaLink:  Rep[String]         = column[String]        ("wikipedia_link",  O.Length(128,varying=true))
     val keywords:       Rep[Option[String]] = column[Option[String]]("keywords",        O.Length(2147483647,varying=false), O.Default(None))
 
-    def * = (id, code, name, continent, wikipediaLink, keywords) <> (CountriesRow.tupled, CountriesRow.unapply)
+    def * = (id, code, name, continent, wikipediaLink, keywords) <> (Country.tupled, Country.unapply)
 
     val index1 = index("countries_code_key", code, unique=true)
     val index2 = index("countries_continent_idx", continent)
@@ -62,7 +51,7 @@ trait Tables {
   lazy val Countries = new TableQuery(tag => new Countries(tag))
 
   import icassina.lunatech.Airport
-  case class AirportsRow(
+  case class Airportw(
     id:               Int,
     ident:            String,
     airportType:      AirportType,
@@ -80,12 +69,12 @@ trait Tables {
     wikipediaLink:    Option[String] = None,
     keywords:         Option[String] = None
   )
-  implicit def GetResultAirportsRow(implicit e0: GR[Int], e1: GR[String], e2: GR[Option[Int]], e3: GR[Option[String]], e4: GR[Boolean]): GR[AirportsRow] = GR {
+  implicit def GetResultAirport(implicit e0: GR[Int], e1: GR[String], e2: GR[Option[Int]], e3: GR[Option[String]], e4: GR[Boolean]): GR[Airport] = GR {
     prs => import prs._
-    AirportsRow.tupled((<<[Int], <<[String], <<[AirportType], <<[String], prs.nextGeometry[Point], <<?[Int], <<[String], <<[String], <<?[String], <<[Boolean], <<?[String], <<?[String], <<?[String], <<?[String], <<?[String], <<?[String]))
+    Airport.tupled((<<[Int], <<[String], <<[AirportType], <<[String], prs.nextGeometry[Point], <<?[Int], <<[String], <<[String], <<?[String], <<[Boolean], <<?[String], <<?[String], <<?[String], <<?[String], <<?[String], <<?[String]))
   }
 
-  class Airports(_tableTag: Tag) extends Table[AirportsRow](_tableTag, Some("lunatech"), "airports") {
+  class Airports(_tableTag: Tag) extends Table[Airport](_tableTag, Some("lunatech"), "airports") {
     val id:               Rep[Int]            = column[Int]             ("id",                O.PrimaryKey)
     val ident:            Rep[String]         = column[String]          ("ident",             O.Length(8,varying=true))
     val airportType:      Rep[AirportType]    = column[AirportType]     ("type")
@@ -105,42 +94,44 @@ trait Tables {
 
     lazy val country = foreignKey("airports_iso_country_fkey", isoCountry, Countries)(r => r.code, onUpdate=ForeignKeyAction.NoAction, onDelete=ForeignKeyAction.NoAction)
 
-    def * = (id, ident, airportType, name, position, elevation, isoCountry, isoRegion, municipality, scheduledService, gpsCode, iataCode, localCode, homeLink, wikipediaLink, keywords) <> (AirportsRow.tupled, AirportsRow.unapply)
+    def * = (id, ident, airportType, name, position, elevation, isoCountry, isoRegion, municipality, scheduledService, gpsCode, iataCode, localCode, homeLink, wikipediaLink, keywords) <> (Airport.tupled, Airport.unapply)
 
     val index1 = index("airports_ident_key", ident, unique=true)
     val index2 = index("airports_keywords_idx", keywords)
   }
   lazy val Airports = new TableQuery(tag => new Airports(tag))
 
-  case class RunwaysRow(
-    id:                   Int,
-    airportRef:           Int,
-    length:               Option[Int] = None,
-    width:                Option[Int] = None,
-    surface:              Option[String] = None,
-    surfaceStd:           Surface,
-    lighted:              Boolean,
-    closed:               Boolean,
-    leIdent:              Option[String] = None,
-    lePosition:           Option[Point] = None,
-    leElevation:          Option[Int] = None,
-    leHeading:            Option[BigDecimal] = None,
-    leDisplacedThreshold: Option[Int] = None,
-    heIdent:              Option[String] = None,
-    hePosition:           Option[Point] = None,
-    heElevation:          Option[Int] = None,
-    heHeading:            Option[BigDecimal] = None,
-    heDisplacedThreshold: Option[Int] = None
-  )
-  implicit def GetResultRunwaysRow(implicit e0: GR[Int], e1: GR[Option[Int]], e2: GR[Option[String]], e3: GR[String], e4: GR[Boolean], e5: GR[Option[BigDecimal]]): GR[RunwaysRow] = GR{
+  //case class Runway(
+    //id:                   Int,
+    //airportRef:           Int,
+    //length:               Option[Int] = None,
+    //width:                Option[Int] = None,
+    //surface:              Option[String] = None,
+    //surfaceStd:           Surface,
+    //lighted:              Boolean,
+    //closed:               Boolean,
+    //leIdent:              Option[String] = None,
+    //lePosition:           Option[Point] = None,
+    //leElevation:          Option[Int] = None,
+    //leHeading:            Option[BigDecimal] = None,
+    //leDisplacedThreshold: Option[Int] = None,
+    //heIdent:              Option[String] = None,
+    //hePosition:           Option[Point] = None,
+    //heElevation:          Option[Int] = None,
+    //heHeading:            Option[BigDecimal] = None,
+    //heDisplacedThreshold: Option[Int] = None
+  //)
+
+
+  implicit def GetResultRunway(implicit e0: GR[Int], e1: GR[Option[Int]], e2: GR[Option[String]], e3: GR[String], e4: GR[Boolean], e5: GR[Option[BigDecimal]]): GR[Runway] = GR{
     prs => import prs._
-    RunwaysRow.tupled((
+    Runway.tupled((
       <<[Int], <<[Int], <<?[Int], <<?[Int], <<?[String], <<[Surface], <<[Boolean], <<[Boolean],
       <<?[String], prs.nextGeometryOption[Point], <<?[Int], <<?[BigDecimal], <<?[Int],
       <<?[String], prs.nextGeometryOption[Point], <<?[Int], <<?[BigDecimal], <<?[Int]
     ))
   }
-  class Runways(_tableTag: Tag) extends Table[RunwaysRow](_tableTag, Some("lunatech"), "runways") {
+  class Runways(_tableTag: Tag) extends Table[Runway](_tableTag, Some("lunatech"), "runways") {
     val id:                   Rep[Int]                = column[Int]               ("id",                        O.PrimaryKey)
     val airportRef:           Rep[Int]                = column[Int]               ("airport_ref")
     val length:               Rep[Option[Int]]        = column[Option[Int]]       ("length_ft",                 O.Default(None))
@@ -162,7 +153,7 @@ trait Tables {
 
     lazy val airport = foreignKey("runways_airport_ref_fkey", airportRef, Airports)(r => r.id, onUpdate=ForeignKeyAction.NoAction, onDelete=ForeignKeyAction.NoAction)
 
-    def * = (id, airportRef, length, width, surface, surfaceStd, lighted, closed, leIdent, lePosition, leElevation, leHeading, leDisplacedThreshold, heIdent, hePosition, heElevation, heHeading, heDisplacedThreshold) <> (RunwaysRow.tupled, RunwaysRow.unapply)
+    def * = (id, airportRef, length, width, surface, surfaceStd, lighted, closed, leIdent, lePosition, leElevation, leHeading, leDisplacedThreshold, heIdent, hePosition, heElevation, heHeading, heDisplacedThreshold) <> (Runway.tupled, Runway.unapply)
 
     val index1 = index("runways_le_ident_idx", leIdent)
     val index2 = index("runways_surface_idx", surface)
