@@ -43,11 +43,11 @@ class SlickDAO @Inject()(db: Database) extends DAO with Tables {
   def topRunwayIdents(implicit ec: DAOExecutionContext): Future[Seq[(String, Int)]] =
     db.run(queries.countIdents.result).map(_.take(10))
 
-  def lookupAirportsByCountry(countryStr: String)(implicit ec: DAOExecutionContext): Future[Seq[Airport]] =
-    db.run(queries.airportsByCountry(countryStr))
+  def lookupAirportsByCountry(countryStr: String)(implicit ec: DAOExecutionContext): Future[Either[Seq[Country], (Country, Seq[Airport])]] =
+    db.run(queries.countryOrAirports(countryStr))
 
-  def lookupRunwaysByCountry(countryStr: String)(implicit ec: DAOExecutionContext): Future[Seq[Runway]] =
-    db.run(queries.runwaysByCountry(countryStr))
+  def lookupRunwaysByCountry(countryStr: String)(implicit ec: DAOExecutionContext): Future[Either[Seq[Country], (Country, Seq[Runway])]] =
+    db.run(queries.countryOrRunways(countryStr))
 
   def close() = Future.successful(db.close())
 
@@ -87,6 +87,17 @@ class SlickDAO @Inject()(db: Database) extends DAO with Tables {
       Runways.groupBy(_.leIdent.getOrElse("")).map { case (i, q) =>
         (i, q.map(_.id).length)
       }.sortBy(_._2.desc)
+
+    def airportsByCountryCode(code: LiteralColumn[String]) =
+        Airports.filter(_.isoCountry === code)
+
+    def runwaysByCountryCode(code: LiteralColumn[String]) =
+      for {
+        r <- Runways
+        a <- r.airport
+        if a.isoCountry === code
+      } yield r
+
 
     object fuzzy {
       def airportsByCountryFuzzy(str: String) = {
@@ -140,28 +151,47 @@ class SlickDAO @Inject()(db: Database) extends DAO with Tables {
           ORDER BY airport_ident, le_ident
         """.as[Runway]
       }
-
-      def airportsByCountryCode(code: LiteralColumn[String]) =
-          Airports.filter(_.isoCountry === code)
-
-      def runwaysByCountryCode(code: LiteralColumn[String]) =
-        for {
-          r <- Runways
-          a <- r.airport
-          if a.isoCountry === code
-        } yield r
-
     }
 
-    def airportsByCountry(countryStr: String): DBIO[Seq[Airport]] = pickFun(countryStr)(
-      fuzzy.airportsByCountryCode(_).result,
-      fuzzy.airportsByCountryFuzzy
-    )
+    def countries(str: String) = {
+      sql"""
+        SELECT * FROM countries WHERE country_name % $str
+      """.as[Country]
+    }
 
-    def runwaysByCountry(countryStr: String): DBIO[Seq[Runway]] = pickFun(countryStr)(
-      fuzzy.runwaysByCountryCode(_).result,
-      fuzzy.runwaysByCountryFuzzy
-    )
+    def countryOrSeq[R, T](s: String)(f: (Country) => Query[R, T, Seq])(
+      implicit ec: DAOExecutionContext
+    ): DBIO[Either[Seq[Country], (Country, Seq[T])]] =
+      if (s.length < 2) {
+        println("less than 2")
+        DBIO.successful(Left(Seq.empty))
+      } else if (s.length == 2) {
+        println("exactly 2")
+        Countries.filter(_.code === s.toUpperCase).take(1).result.headOption.flatMap(_.map { country =>
+          f(country).result.map(as => {
+            Right(country -> as)
+          })
+        }.getOrElse(DBIO.successful(Left(Seq.empty))))
+      } else {
+        println("more than 2")
+        countries(s).flatMap { cs =>
+          if (cs.length > 1) {
+            DBIO.successful(Left(cs))
+          } else {
+            cs.headOption.map { country =>
+              f(country).result.map(res => Right((country -> res)))
+            }.getOrElse {
+              Countries.take(0).result.map(Left.apply)
+            }
+          }
+        }
+      }
+
+    def countryOrAirports(s: String)(implicit ec: DAOExecutionContext): DBIO[Either[Seq[Country], (Country, Seq[Airport])]] =
+      countryOrSeq(s)(c => Airports.filter(_.isoCountry === c.code))
+
+    def countryOrRunways(s: String)(implicit ec: DAOExecutionContext): DBIO[Either[Seq[Country], (Country, Seq[Runway])]] =
+      countryOrSeq(s)(c => runwaysWithAirport.filter(_._2.isoCountry === c.code).map(_._1))
   }
 
 

@@ -1,6 +1,6 @@
-@(top10: Seq[(Country, Int)], low10: Seq[(Country, Int)], surf: Seq[(Country, String, Int)], topId: Seq[(String, Int)])
+@(top10: Seq[(Country, Int)], low10: Seq[(Country, Int)], surf: Seq[(Country, String, Int)], topId: Seq[(String, Int)])(wsuri: String)
 
-@main("Lunatech Assignment - Reports") {
+@main("Lunatech Assignment - Reports", wsuri) {
   <div class="row">
     <div class="col-md-6">
       @country_airports_panel("Countries having most airports", top10)

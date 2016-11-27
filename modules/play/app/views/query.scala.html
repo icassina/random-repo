@@ -1,4 +1,5 @@
-@main("Lunatech Assignment - Query", css = List("lib/openlayers/ol.css"), scripts = List("lib/openlayers/ol.js", "lib/jquery/jquery.js")) {
+@()(wsuri: String)
+@main("Lunatech Assignment - Query", wsuri, css = List("lib/openlayers/ol.css"), scripts = List("lib/openlayers/ol.js", "lib/jquery/jquery.js")) {
   <div class="row">
     <div class="col-md-3">
       <div class="row">
@@ -35,17 +36,21 @@
       </div>
     </div>
     <div class="col-md-9">
-      <div id="map"></div>
-      <script src="@routes.Assets.versioned("js/query.js")" type="application/javascript"></script>
-    </div>
-  </div>
-  <div class="row">
-    <div class="col-md-12">
-      <div class="panel panel-success">
-        <div class="panel-heading">
-          <h5>Logs</h5>
+      <div class="row">
+        <div class="col-md-12">
+          <div id="map"></div>
+          <script src="@routes.Assets.versioned("js/query.js")" type="application/javascript"></script>
         </div>
-        <div class="panel-body">
+      </div> 
+      <div class="row">
+        <div class="col-md-12">
+          <div class="panel panel-success">
+            <div class="panel-body" id="query-log-area">
+            </div>
+            <div class="panel-footer">
+              <p class="text-right">Logs</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
