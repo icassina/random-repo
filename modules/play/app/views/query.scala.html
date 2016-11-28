@@ -1,41 +1,40 @@
 @()(wsuri: String)
-@main("Lunatech Assignment - Query", wsuri, css = List("lib/openlayers/ol.css"), scripts = List("lib/openlayers/ol.js", "lib/jquery/jquery.js")) {
+@main("Lunatech Assignment - Query", wsuri,
+  css = List("lib/openlayers/ol.css"),
+  scripts = List(
+    "lib/openlayers/ol.js",
+    "lib/jquery/jquery.js",
+    "lib/selectize.js/js/standalone/selectize.js",
+    "lib/datatables/js/jquery.dataTables.js"
+  )
+) {
   <div class="row">
-    <div class="col-md-3">
-      <div class="row">
-        <div class="col-md-12">
-          <div class="panel panel-info">
-            <div class="panel-heading">
-              <h5>Country</h5>
-            </div>
-            <ol id="query-countries-results">
-            </ol>
+    <div class="col-md-4">
+      <div class="col-md-12">
+        <div class="panel panel-primary">
+          <div class="panel-heading">
+            <h5>Airports <span id="airports-results-title-extra"></span></h5>
           </div>
-        </div>
-      </div>
-      <div class="row">
-        <div class="col-md-12">
-          <div class="panel panel-primary">
-            <div class="panel-heading">
-              <h5>Airports</h5>
-            </div>
-            <table class="table table-hover table-condensed">
+          <div class="panel-body">
+            <table class="table table-hover table-condensed hover" id="airports-results-table">
               <thead>
                 <tr>
                   <th>ID</th>
                   <th>Ident</th>
                   <th>Name</th>
-                  <th>…</th>
+                  <th>Type</th>
+                  <th>Region</th>
+                  <th>Municipality</th>
                 </tr>
               </thead>
-              <tbody id="query-airports-results">
+              <tbody>
               </tbody>
             </table>
           </div>
         </div>
       </div>
     </div>
-    <div class="col-md-9">
+    <div class="col-md-8">
       <div class="row">
         <div class="col-md-12">
           <div id="map"></div>
@@ -46,9 +45,6 @@
         <div class="col-md-12">
           <div class="panel panel-success">
             <div class="panel-body" id="query-log-area">
-            </div>
-            <div class="panel-footer">
-              <p class="text-right">Logs</p>
             </div>
           </div>
         </div>
