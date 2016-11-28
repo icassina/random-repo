@@ -72,6 +72,7 @@ object Messages {
   case class AirportFeature(airport: Airport) extends AnyVal
   implicit val airportFeatureWrite: Writes[AirportFeature] = Writes[AirportFeature] { a =>
     Json.obj(
+      "id"        -> a.airport.id,
       "type"      -> "Feature",
       "geometry"  -> Json.obj(
         "type"        -> "Point",
@@ -98,6 +99,7 @@ object Messages {
   implicit val runwayFeatureWrite: Writes[RunwayFeature] = Writes[RunwayFeature] { r =>
     r.runway.lePosition.map(p => Seq(p.getX, p.getY)).map { coords =>
       Json.obj(
+        "id"        -> r.runway.id,
         "type"      -> "Feature",
         "geometry"  -> Json.obj(
           "type"        -> "Point",
@@ -108,6 +110,7 @@ object Messages {
     }.orElse {
       r.runway.hePosition.map(p => Seq(p.getX, p.getY)).map { coords =>
         Json.obj(
+          "id"        -> r.runway.id,
           "type"      -> "Feature",
           "geometry"  -> Json.obj(
             "type"        -> "Point",

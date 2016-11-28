@@ -255,34 +255,29 @@ $ ->
       selectAirportInteraction
     ])
 
-    showPopup = (generate) -> (feat) ->
+    showPopup = (content) -> (feat, coords) ->
       element = $(popup.getElement())
-      coordinates = feat.getGeometry().getCoordinates()
       element.popover('destroy')
-      popup.setPosition(coordinates)
-      generated = generate(feat, coordinates)
+      popup.setPosition(coords)
       element.popover({
         placement:  'right'
         animation:  true
         html:       true
-        title:      """<p><a href="#" class="close">&times</a></p>"""
-        content:    generated.content
+        content:    content(feat, coords)
       })
       element.popover('show')
-      $('.popover a.close').click(() ->
-        element.popover('destroy')
-      )
+      #$('.popover a.close').click(() ->
+        #element.popover('destroy')
+      #)
 
     ### TODO: move this big chunk to somewhere else ###
-    generateAirport = (feat, coords) ->
-      console.log(feat)
-      console.log(coords)
+    airportContent = (feat, coords) ->
       a = feat.getProperties()
       position = ol.coordinate.toStringHDMS(coords)
       strong = (value) -> fold(value)('?')((v) -> "<strong>#{v}</strong>")
       elevation = fold(a.elevation)('?')((v) -> "<strong>#{v}</strong> (ft)")
-      content = """
-        <ul class="list-group">
+      """
+        <ul class="list-group box-shadow">
           <li class="list-group-item list-group-item-info"><strong>#{a.name}</strong> <span class="badge">#{a.ident}</span></li>
           <li class="list-group-item">Type: <strong>#{a.airportType}</strong></li>
           <li class="list-group-item">Region: #{strong(a.isoRegion)}</li>
@@ -301,28 +296,40 @@ $ ->
         </div>
       """
 
-      {
-        title: ""
-        content: content
-      }
+    showAirportPopup = showPopup(airportContent)
 
-    showAirportPopup = showPopup(generateAirport)
+    panTo = (location) ->
+      pan = ol.animation.pan({
+        source: view.getCenter()
+      })
+      map.beforeRender(pan)
+      view.setCenter(location)
 
     selectedAirport = selectAirportInteraction.getFeatures()
     selectedAirport.on('add', (event) ->
       feat = event.target.item(0)
-      console.log(feat)
-      showAirportPopup(feat)
+      coords = feat.getGeometry().getCoordinates()
+      showAirportPopup(feat, coords)
+      panTo(coords)
       airport = feat.getProperties()
       for cb in airportCallbacks
         cb(airport)
     )
+    selectedAirport.on('remove', (event) ->
+      element = $(popup.getElement())
+      element.popover('destroy')
+    )
+
+    selectAirport = (id) ->
+      selectedAirport.clear()
+      feat = airportsSource.getFeatureById(id)
+      selectedAirport.push(feat)
 
     selectedRunway = selectRunwayInteraction.getFeatures()
     selectedRunway.on('add', (event) ->
       feat = event.target.item(0)
+      runway = feat.getProperties()
       for cb in runwayCallbacks
-        runway = feat.getProperties()
         cb(runway)
     )
 
@@ -346,6 +353,7 @@ $ ->
       updateRunways: updateRunways
       onAirportSelected: registerAirportCallback
       onRunwaySelected: registerRunwayCallback
+      selectAirport: selectAirport
     }
 
 
@@ -356,7 +364,8 @@ $ ->
     logger = config.logger
     target = config.target
     height = config.height
-    extract = config.extract
+    rowId = config.rowId
+    columns = config.columns
 
     dataTable = $("##{target}").DataTable({
       scrollY:          height
@@ -364,14 +373,53 @@ $ ->
       bScrollCollapse:  false
       scrollCollapse:   false
       paging:           false
+      rowId:            rowId
+      columns:          columns
     })
 
+    selectCallbacks = []
+    unselectCallbacks = []
+
+    getSelectedData = () ->
+      idx = dataTable.row('.selected').index()
+      data = dataTable.row(idx).data()
+      data
+
+
+    $("##{config.target} tbody").on('click', 'tr', () ->
+      elem = $(this)
+      if elem.hasClass('selected')
+        data = getSelectedData()
+        elem.removeClass('selected active')
+
+        for cb in unselectCallbacks
+          cb(data)
+      else
+        dataTable.$('tr.selected').each(() ->
+          self = $(this)
+          data = getSelectedData()
+          self.removeClass('selected active')
+          for cb in unselectCallbacks
+            cb(data)
+        )
+        elem.addClass('selected active')
+        data = getSelectedData()
+        for cb in selectCallbacks
+          cb(data)
+    )
+
+    select = (id) ->
+      
+
     update = (data) ->
-      #logger.debug("TableResults #{target} update [#{data.length}]")
-      dataTable.rows.add(extract(data)).draw(true)
+      dataTable.rows.add(data).draw(true)
 
     {
       update: update
+      selectedData: getSelectedData
+      onSelectRow:  (cb) -> selectCallbacks.push(cb)
+      onUnselectRow: (cb) -> unselectCallbacks.push(cb)
+      select: (id) ->
     }
 
 
@@ -382,18 +430,17 @@ $ ->
     TableResults({
       logger: config.logger
       target: 'airports-results-table'
-      height: '39vh'
-      extract: (airports) ->
-        [
-          a.id
-          a.ident
-          a.name
-          a.airportType
-          a.isoRegion
-          a.municipality
-        ] for a in (
-          feat.properties for feat in airports
-        )
+      height: '33vh'
+      select: true
+      rowId: (id) -> "airport_id_#{id}"
+      columns: [
+        { data: 'id' }
+        { data: 'ident' }
+        { data: 'name' }
+        { data: 'airportType' }
+        { data: 'isoRegion' }
+        { data: 'municipality' }
+      ]
     })
 
 
@@ -405,24 +452,26 @@ $ ->
     TableResults({
       logger: config.logger
       target: 'runways-results-table'
-      height: '15vh'
-      extract: (runways) ->
-        [
-          r.id
-          r.leIdent
-          r.surface
-          r.length
-          r.width
-          renderBoolean(r.lighted)
-          renderBoolean(! r.closed)
-          r.leHeading
-          r.leElevation
-        ] for r in runways
+      height: '22vh'
+      rowId: (id) -> "runway_id_#{id}"
+      columns: [
+        { data: 'id' }
+        { data: 'leIdent' }
+        { data: 'surface' }
+        { data: 'length' }
+        { data: 'width' }
+        { data: 'lighted', render: renderBoolean }
+        { data: 'closed', render: (b) -> renderBoolean(! b) }
+        { data: 'leHeading' }
+        { data: 'leElevation' }
+        { data: 'airportRef', visible: false }
+      ]
     })
 
 
+# FIXME
 ##############################################################################
-  ### Countries Results ###
+  ### Countries Results ### 
   #########################
   CountriesResults = (config) ->
     logger = config.logger
@@ -528,15 +577,19 @@ $ ->
     runwaysResults = RunwaysResults({logger: logger})
     countriesResults = CountriesResults({logger: logger})
 
+    airportsResults.onSelectRow((data) ->
+      map.selectAirport(data.id)
+    )
+
     map.onAirportSelected((airport) ->
       extraInfo = ->
         pre = if airport.municipality? then "in #{airport.municipality}" else "in"
         "#{pre} #{airport.isoRegion} (type: #{airport.airportType})"
 
-
       logger.info(
         """&uarr; [#{airport.ident}] #{airport.name} #{extraInfo()}"""
       )
+      airportsResults.select(airport.id)
     )
 
     map.onRunwaySelected((runway) ->
@@ -549,7 +602,7 @@ $ ->
       countriesResults.update(countries)
 
     refreshAirportsResults = (airports) ->
-      airportsResults.update(airports.features)
+      airportsResults.update(feat.properties for feat in airports.features)
       map.updateAirports(airports)
 
     refreshRunwaysResults = (runways) ->
@@ -613,7 +666,7 @@ $ ->
   ##################
 
   logger = Logger({
-    maxLogLines: 11
+    maxLogLines: 14
   })
 
   wsconfig = $('#ws-config').data()

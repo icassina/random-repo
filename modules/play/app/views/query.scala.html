@@ -15,10 +15,10 @@
 ) {
   <script src="@routes.Assets.versioned("js/query.js")" type="application/javascript"></script>
   <div class="row">
-    <div class="col-md-4">
+    <div class="col-md-5">
       @airports_table()
     </div>
-    <div class="col-md-8">
+    <div class="col-md-7">
       <div id="map"></div>
       <div style="display: none;">
         <div id="query-info-box">
@@ -27,13 +27,13 @@
     </div>
   </div>
   <div class="row">
-    <div class="col-md-4">
+    <div class="col-md-5">
       <div class="panel panel-success">
         <div class="panel-body" id="query-log-area">
         </div>
       </div>
     </div>
-    <div class="col-md-8">
+    <div class="col-md-7">
       @runways_table()
     </div>
   </div>
