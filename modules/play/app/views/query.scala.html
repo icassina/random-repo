@@ -11,45 +11,30 @@
     "lib/datatables/js/jquery.dataTables.js"
   )
 ) {
+  <script src="@routes.Assets.versioned("js/query.js")" type="application/javascript"></script>
+  <div id="query-info-box" class="alert alert-info alert-dismissible hidden" role="alert" style="position: relative;">
+    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+      <span aria-hidden="true">&times;</span></button>
+      <div id="query-info-panel">
+        Test
+      </div>
+    </button>
+  </div>
   <div class="row">
     <div class="col-md-4">
-      <div class="col-md-12">
-        <div class="panel panel-primary">
-          <div class="panel-heading">
-            <h5>Airports <span id="airports-results-title-extra"></span></h5>
-          </div>
-          <div class="panel-body">
-            <table class="table table-hover table-condensed hover" id="airports-results-table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Ident</th>
-                  <th>Name</th>
-                  <th>Type</th>
-                  <th>Region</th>
-                  <th>Municipality</th>
-                </tr>
-              </thead>
-              <tbody>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
+      @airports_table()
     </div>
     <div class="col-md-8">
-      <div class="row">
-        <div class="col-md-12">
-          <div id="map"></div>
-          <script src="@routes.Assets.versioned("js/query.js")" type="application/javascript"></script>
-        </div>
-      </div> 
-      <div class="row">
-        <div class="col-md-12">
-          <div class="panel panel-success">
-            <div class="panel-body" id="query-log-area">
-            </div>
-          </div>
+      <div id="map"></div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-4">
+      @runways_table()
+    </div>
+    <div class="col-md-8">
+      <div class="panel panel-success">
+        <div class="panel-body" id="query-log-area">
         </div>
       </div>
     </div>

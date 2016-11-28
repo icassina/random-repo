@@ -27,8 +27,7 @@ $ ->
         logArea.children().first().remove()
 
       logLines.push(line)
-      if level != 'trace' and level != 'debug'
-        logArea.append("""<p class="#{pClass}">#{line}</p>""")
+      logArea.append("""<p class="#{pClass}">#{line}</p>""")
 
     for i in [0 .. maxLogLines]
       _log('__internal__')("&nbsp;")
@@ -52,22 +51,95 @@ $ ->
   ### Map ###
   ###########
   MyMap = (config) ->
-    fill = new ol.style.Fill({
-      color: 'rgba(255, 25, 25, 0.8)'
-    })
-    stroke = new ol.style.Stroke({
-      color: '#000000'
-      width: 2
-    })
+    airportCallbacks = []
+    runwayCallbacks = []
+
     styles = {
-      predef: new ol.style.Style({
-        image: new ol.style.Circle({
-          fill: fill
-          stroke: stroke
-          radius: 5
+      airports: {
+        predef: new ol.style.Style({
+          image: new ol.style.Circle({
+            fill: new ol.style.Fill({
+              color: 'rgba(127, 255, 127, 0.5)'
+            })
+            stroke: new ol.style.Stroke({
+              color: 'rgba(20, 180, 20, 0.75)'
+              width: 2
+            })
+            radius: 8
+          })
         })
-      })
+        highlight: new ol.style.Style({
+          image: new ol.style.Circle({
+            fill: new ol.style.Fill({
+              color: 'rgba(90, 255, 90, 0.75)'
+            })
+            stroke: new ol.style.Stroke({
+              color: 'rgba(0, 180, 0, 0.75)'
+              width: 2
+            })
+            radius: 12
+          })
+          zIndex: 2
+        })
+        selected: new ol.style.Style({
+          image: new ol.style.Circle({
+            fill: new ol.style.Fill({
+              color: 'rgba(255, 180, 25, 0.8)'
+            })
+            stroke: new ol.style.Stroke({
+              color: 'rgba(180, 90, 0, 0.8)'
+              width: 2
+            })
+            radius: 12
+          })
+          zIndex: 1
+        })
+      }
+      runways: {
+        predef: new ol.style.Style({
+          image: new ol.style.Circle({
+            fill: new ol.style.Fill({
+              color: 'rgba(127, 127, 255, 0.5)'
+            })
+            stroke: new ol.style.Stroke({
+              color: 'rgba(20, 20, 180, 0.75)'
+              width: 2
+            })
+            radius: 8
+          })
+        })
+        highlight: new ol.style.Style({
+          image: new ol.style.Circle({
+            fill: new ol.style.Fill({
+              color: 'rgba(90, 90, 255, 0.75)'
+            })
+            stroke: new ol.style.Stroke({
+              color: 'rgba(0, 0, 180, 0.75)'
+              width: 2
+            })
+            radius: 12
+          })
+          zIndex: 2
+        })
+        selected: new ol.style.Style({
+          image: new ol.style.Circle({
+            fill: new ol.style.Fill({
+              color: 'rgba(25, 255, 180, 0.8)'
+            })
+            stroke: new ol.style.Stroke({
+              color: 'rgba(0, 180, 90, 0.8)'
+              width: 2
+            })
+            radius: 12
+          })
+          zIndex: 1
+        })
+      }
     }
+
+    osmTiles = new ol.layer.Tile({
+      source: new ol.source.OSM()
+    })
 
     geoJSON = new ol.format.GeoJSON()
 
@@ -75,36 +147,128 @@ $ ->
       format: geoJSON
     })
 
+    runwaysSource = new ol.source.Vector({
+      format: geoJSON
+    })
+
+    airportsLayer = new ol.layer.Vector({
+      id: 'airports'
+      source: airportsSource
+      style: styles.airports.predef
+    })
+
+    runwaysLayer = new ol.layer.Vector({
+      id: 'runways'
+      source: runwaysSource
+      style: styles.runways.predef
+    })
+
+    view = new ol.View({
+      projection: 'EPSG:4326'
+      center: [5.37437083333, 52.14307022093594] # center of NL airports extent
+      zoom: 5
+      minZoom: 1
+      maxZoom: 20
+    })
+
+    hoverAirportInteraction = new ol.interaction.Select({
+      condition: ol.events.condition.pointerMove
+      layers: (layer) -> layer.get('id') == 'airports'
+      style: [styles.airports.highlight]
+    })
+
+    selectAirportInteraction = new ol.interaction.Select({
+      layers: (layer) -> layer.get('id') == 'airports'
+      style: [styles.airports.selected]
+    })
+
+    hoverRunwayInteraction = new ol.interaction.Select({
+      condition: ol.events.condition.pointerMove
+      layers: (layer) -> layer.get('id') == 'runways'
+      style: [styles.runways.highlight]
+    })
+
+    selectRunwayInteraction = new ol.interaction.Select({
+      layers: (layer) -> layer.get('id') == 'runways'
+      style: [styles.runways.selected]
+    })
+
     map = new ol.Map({
       target: config.mapId
-      layers: [
-        new ol.layer.Tile({
-          source: new ol.source.OSM()
-        }),
-        new ol.layer.Vector({
-          source: airportsSource
-          style: styles.predef
-        })
-      ],
-      renderer: 'canvas',
-      view: new ol.View({
-        projection: 'EPSG:4326'
-        center: [5.37437083333, 52.14307022093594] # center of NL airports extent
-        zoom: 5
-        minZoom: 1
-        maxZoom: 20
-      })
     })
+    map.addLayer(osmTiles)
+    map.addLayer(airportsLayer)
+    map.addLayer(runwaysLayer)
+    map.setView(view)
+
+    map.getInteractions().extend([
+      selectAirportInteraction
+      hoverAirportInteraction
+      selectRunwayInteraction
+      hoverRunwayInteraction
+    ])
+
+    selectedAirport = selectAirportInteraction.getFeatures()
+    selectedAirport.on('add', (event) ->
+      feat = event.target.item(0)
+      for cb in airportCallbacks
+        airport = feat.getProperties()
+        cb(airport)
+    )
+
+    selectedRunway = selectRunwayInteraction.getFeatures()
+    selectedRunway.on('add', (event) ->
+      feat = event.target.item(0)
+      for cb in runwayCallbacks
+        runway = feat.getProperties()
+        cb(runway)
+    )
+
+    registerAirportCallback = (cb) ->
+      airportCallbacks.push(cb)
+
+    registerRunwayCallback = (cb) ->
+      runwayCallbacks.push(cb)
 
     updateAirports = (airportsFeatures) ->
       airportsSource.clear()
-      airportsSource.addFeatures( geoJSON.readFeatures(airportsFeatures))
-      extent = airportsSource.getExtent()
-
+      airportsSource.addFeatures(geoJSON.readFeatures(airportsFeatures))
       map.getView().fit(airportsSource.getExtent(), map.getSize())
+
+    updateRunways = (runwaysFeatures) ->
+      runwaysSource.clear()
+      runwaysSource.addFeatures(geoJSON.readFeatures(runwaysFeatures))
 
     {
       updateAirports: updateAirports
+      updateRunways: updateRunways
+      onAirportSelected: registerAirportCallback
+      onRunwaySelected: registerRunwayCallback
+    }
+
+
+##############################################################################
+  ### Table Results ###
+  #####################
+  TableResults = (config) ->
+    logger = config.logger
+    target = config.target
+    height = config.height
+    extract = config.extract
+
+    dataTable = $("##{target}").DataTable({
+      scrollY:          height
+      sScrollY:         height
+      bScrollCollapse:  false
+      scrollCollapse:   false
+      paging:           false
+    })
+
+    update = (data) ->
+      dataTable.rows.add(extract(data)).draw(true)
+
+    {
+      update: update
     }
 
 
@@ -112,36 +276,47 @@ $ ->
   ### Airports Results ###
   ########################
   AirportsResults = (config) ->
-    logger = config.logger
-
-    ### DataTable ###
-    dataTable = $('#airports-results-table').DataTable( {
-      scollY:         "75vh"
-      sScrollY:       "75vh"
-      scrollCollapse: true
-      paging:         false
+    TableResults({
+      logger: config.logger
+      target: 'airports-results-table'
+      height: '41vh'
+      extract: (airports) ->
+        [
+          a.id
+          a.ident
+          a.name
+          a.airportType
+          a.isoRegion
+          a.municipality
+        ] for a in (
+          feat.properties for feat in airports
+        )
     })
 
-    airportsColumns = (airports) ->
-      [
-        a.id,
-        a.ident,
-        a.name,
-        a.airportType,
-        a.isoRegion,
-        a.municipality
-      ] for a in (
-        feat.properties for feat in airports
-      )
 
-    update = (airports) ->
-      dataTable.rows.add(
-        airportsColumns(airports)
-      ).draw(true)
-
-    {
-      update: update
-    }
+##############################################################################
+  ### Runways Results ###
+  #######################
+  RunwaysResults = (config) ->
+    TableResults({
+      logger: config.logger
+      target: 'runways-results-table'
+      height: '19vh'
+      extract: (runways) ->
+        [
+          r.id
+          r.leIdent
+          r.surface
+          r.length
+          r.width
+          r.lighted
+          r.closed
+          r.leHeading
+          r.leHelevation
+        ] for r in (
+          feat.properties for feat in runways
+        )
+    })
 
 
 ##############################################################################
@@ -248,7 +423,24 @@ $ ->
       logger: logger
     })
     airportsResults = AirportsResults({logger: logger})
+    runwaysResults = RunwaysResults({logger: logger})
     countriesResults = CountriesResults({logger: logger})
+
+    map.onAirportSelected((airport) ->
+      extraInfo = ->
+        pre = if airport.municipality? then "in #{airport.municipality}" else "in"
+        "#{pre} #{airport.isoRegion} (type: #{airport.airportType})"
+
+
+      logger.info(
+        """&uarr; [#{airport.ident}] #{airport.name} #{extraInfo()}"""
+      )
+    )
+
+    map.onRunwaySelected((runway) ->
+      logger.info(
+        """&uarr; [#{runway.leIdent}]"""
+      )
 
     refreshCountryResults = (countries) ->
       countriesResults.update(countries)
@@ -256,6 +448,10 @@ $ ->
     refreshAirportsResults = (airports) ->
       airportsResults.update(airports.features)
       map.updateAirports(airports)
+
+    refreshRunwaysResults = (runways) ->
+      runwaysResults.update(runways.features)
+      map.updateRunways(runways)
       
 
     # receive function
@@ -287,6 +483,7 @@ $ ->
 
         when 'send-runways'
           logger.in("send-runways for: #{data.result.country.name}")
+          refreshRunwaysResults(data.result.runways)
 
         else
           logger.warn("unknown message: #{data}")

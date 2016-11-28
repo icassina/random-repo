@@ -134,6 +134,7 @@ class WSActor(client: ActorRef)(implicit dao: DAO, ec: DAOExecutionContext) exte
             sendResponse(SendCountries(countries))
           }
         }
+        // TODO: simplify this mess (and on API and Slick modules)
         case Message.CountryQuery(queryStr) => {
           println(s"query: ${queryStr}")
           dao.lookupAirportsByCountry(queryStr).map { as =>
