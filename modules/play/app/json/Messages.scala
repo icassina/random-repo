@@ -16,65 +16,56 @@ object Messages {
 
   implicit val countryWrite: Writes[Country] = Writes[Country] { c =>
     Json.obj(
-      "type"  -> "country",
-      "data"  -> Json.obj(
-        "id"              -> c.id,
-        "code"            -> c.code,
-        "name"            -> c.name,
-        "continent"       -> c.continent,
-        "wikipedia_link"  -> c.wikipediaLink,
-        "keywords"        -> c.keywords
-      )
+      "id"              -> c.id,
+      "code"            -> c.code,
+      "name"            -> c.name,
+      "continent"       -> c.continent,
+      "wikipedia_link"  -> c.wikipediaLink,
+      "keywords"        -> c.keywords
     )
   }
 
   implicit val airportWrite: Writes[Airport] = Writes[Airport] { a =>
     Json.obj(
-      "type"  -> "airport",
-      "data"  -> Json.obj(
-        "id"                -> a.id,
-        "ident"             -> a.ident,
-        "airportType"       -> a.airportType,
-        "name"              -> a.name,
-        "position"          -> wktWriter.write(a.position),
-        "elevation"         -> a.elevation,
-        "isoCountry"        -> a.isoCountry,
-        "isoRegion"         -> a.isoRegion,
-        "municipality"      -> a.municipality,
-        "scheduledService"  -> a.scheduledService,
-        "gpsCode"           -> a.gpsCode,
-        "iataCode"          -> a.iataCode,
-        "localCode"         -> a.localCode,
-        "homeLink"          -> a.homeLink,
-        "wikipediaLink"     -> a.wikipediaLink,
-        "keywords"          -> a.keywords
-      )
+      "id"                -> a.id,
+      "ident"             -> a.ident,
+      "airportType"       -> a.airportType,
+      "name"              -> a.name,
+      "position"          -> wktWriter.write(a.position),
+      "elevation"         -> a.elevation,
+      "isoCountry"        -> a.isoCountry,
+      "isoRegion"         -> a.isoRegion,
+      "municipality"      -> a.municipality,
+      "scheduledService"  -> a.scheduledService,
+      "gpsCode"           -> a.gpsCode,
+      "iataCode"          -> a.iataCode,
+      "localCode"         -> a.localCode,
+      "homeLink"          -> a.homeLink,
+      "wikipediaLink"     -> a.wikipediaLink,
+      "keywords"          -> a.keywords
     )
   }
 
   implicit val runwayWrite: Writes[Runway] = Writes[Runway] { r =>
     Json.obj(
-      "type"  -> "runway",
-      "data"  -> Json.obj(
-        "id"                    -> r.id,
-        "airportRef"            -> r.airportRef,
-        "length"                -> r.length,
-        "width"                 -> r.width,
-        "surface"               -> r.surface,
-        "surfaceStd"            -> r.surfaceStd,
-        "lighted"               -> r.lighted,
-        "closed"                -> r.closed,
-        "leIdent"               -> r.leIdent,
-        "lePosition"            -> r.lePosition.map(wktWriter.write(_)),
-        "leElevation"           -> r.leElevation,
-        "leHeading"             -> r.leHeading,
-        "leDisplacedThreshold"  -> r.leDisplacedThreshold,
-        "heIdent"               -> r.heIdent,
-        "hePosition"            -> r.hePosition.map(wktWriter.write(_)),
-        "heElevation"           -> r.heElevation,
-        "heHeading"             -> r.heHeading,
-        "heDisplacedThreshold"  -> r.heDisplacedThreshold
-      )
+      "id"                    -> r.id,
+      "airportRef"            -> r.airportRef,
+      "length"                -> r.length,
+      "width"                 -> r.width,
+      "surface"               -> r.surface,
+      "surfaceStd"            -> r.surfaceStd,
+      "lighted"               -> r.lighted,
+      "closed"                -> r.closed,
+      "leIdent"               -> r.leIdent,
+      "lePosition"            -> r.lePosition.map(wktWriter.write(_)),
+      "leElevation"           -> r.leElevation,
+      "leHeading"             -> r.leHeading,
+      "leDisplacedThreshold"  -> r.leDisplacedThreshold,
+      "heIdent"               -> r.heIdent,
+      "hePosition"            -> r.hePosition.map(wktWriter.write(_)),
+      "heElevation"           -> r.heElevation,
+      "heHeading"             -> r.heHeading,
+      "heDisplacedThreshold"  -> r.heDisplacedThreshold
     )
   }
 

@@ -25,6 +25,9 @@ class SlickDAO @Inject()(db: Database) extends DAO with Tables {
   def stats(implicit ec: DAOExecutionContext): Future[(Int, Int, Int)] =
     db.run(queries.stats.result)
 
+  def countries(implicit ec: DAOExecutionContext): Future[Seq[Country]] =
+    db.run(Countries.result)
+
   def airportsByCountry(implicit ec: DAOExecutionContext): Future[Seq[(Country, Int)]] =
     db.run(queries.countAirportsByCountry.result)
 

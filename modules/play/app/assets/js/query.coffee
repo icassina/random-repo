@@ -13,34 +13,39 @@ $ ->
         when 'trace'  then 'text-muted'
         when 'debug'  then ''
         when 'info'   then 'text-info'
-        when 'okay'   then 'text-success'
+        when 'in'     then 'text-success'
+        when 'out'    then 'text-primary'
         when 'warn'   then 'text-warning'
         when 'err'    then 'text-danger'
         else ''
 
-    log = (level) -> (line) ->
+    _log = (level) -> (line) ->
       pClass = level2class(level)
 
-      if logLines >= maxLogLines
+      if logLines.length >= maxLogLines
         logLines.shift()
-        logArea.children.first.remove()
+        logArea.children().first().remove()
 
       logLines.push(line)
-      console.log("#{level} | #{line}")
-      logArea.append("""<p class="#{pClass}">#{line}</p>""")
+      if level != 'trace' and level != 'debug'
+        logArea.append("""<p class="#{pClass}">#{line}</p>""")
+
+    for i in [0 .. maxLogLines]
+      _log('__internal__')("&nbsp;")
 
     clear = () ->
       logLines = []
       logArea.empty()
 
     {
-      trace: log('trace')
-      debug: log('debug')
-      info:  log('info')
-      okay:  log('okay')
-      warn:  log('warn')
-      err:   log('err')
-      clear: clear
+      trace:  _log('trace')
+      debug:  _log('debug')
+      info:   _log('info')
+      out:    _log('out')
+      in:     _log('in')
+      warn:   _log('warn')
+      err:    _log('err')
+      clear:  clear
     }
 
 ##############################################################################
@@ -84,14 +89,18 @@ $ ->
       renderer: 'canvas',
       view: new ol.View({
         projection: 'EPSG:4326'
-        center: ol.proj.fromLonLat([0, 0])
-        zoom: 4
+        center: [5.37437083333, 52.14307022093594] # center of NL airports extent
+        zoom: 5
+        minZoom: 1
+        maxZoom: 20
       })
     })
 
     updateAirports = (airportsFeatures) ->
       airportsSource.clear()
       airportsSource.addFeatures( geoJSON.readFeatures(airportsFeatures))
+      extent = airportsSource.getExtent()
+
       map.getView().fit(airportsSource.getExtent(), map.getSize())
 
     {
@@ -107,8 +116,8 @@ $ ->
 
     ### DataTable ###
     dataTable = $('#airports-results-table').DataTable( {
-      scollY:         "50vh"
-      sScrollY:       "50vh"
+      scollY:         "75vh"
+      sScrollY:       "75vh"
       scrollCollapse: true
       paging:         false
     })
@@ -122,7 +131,7 @@ $ ->
         a.isoRegion,
         a.municipality
       ] for a in (
-        feat.properties.data for feat in airports
+        feat.properties for feat in airports
       )
 
     update = (airports) ->
@@ -175,9 +184,10 @@ $ ->
   ### Query ###
   #############
   Query = (config) ->
-    queryInput = $('#query-input')
     queryForm = $('#query-form')
+    queryInput = $('#query-input')
     querySubmit = $('#query-submit')
+    selector = undefined
 
     lastQuery = undefined
 
@@ -188,17 +198,34 @@ $ ->
       if queryStr != lastQuery
         if queryStr.length >= 2
           lastQuery = queryStr
-          logger.okay("&rarr; country-query: #{queryStr}")
+          logger.out("&rarr; country-query: #{queryStr}")
           socket.send(JSON.stringify({
             type: 'country-query'
             query: queryStr
           }))
 
     # bind on queryForm submit event
-    setup = () ->
+    setup = (countries) ->
+      selector = queryInput.selectize({
+        maxItems: 1
+        labelField: 'name'
+        valueField: 'code'
+        searchField: ['code', 'name', 'keywords']
+        options: countries
+        preload: false
+        persist: false
+      })
+      selector = selector[0].selectize
+      #selector.change(() ->
+      selector.on('change', () ->
+        sendQuery(queryInput.val())
+      )
       queryForm.submit (event) ->
         event.preventDefault()
         sendQuery(queryInput.val())
+
+      queryForm.removeClass('hidden')
+      querySubmit.removeClass('hidden')
 
     {
       setup: setup
@@ -241,8 +268,8 @@ $ ->
         when 'country-query-response'
           switch (data.result.type)
             when 'country-found'
-              logger.okay("&larr; country-query-response/country-found: #{data.result.data.country.data.name}")
-              refreshCountryResults([data.result.data.country.data])
+              logger.in("&larr; country-query-response/country-found: #{data.result.data.country.name}")
+              refreshCountryResults([data.result.data.country])
             when 'no-matches'
               logger.warn("&larr; country-query-response/no-matches")
               refreshCountryResults([])
@@ -250,12 +277,16 @@ $ ->
               logger.info("&larr; country-query-response/matching-countries: #{data.result.data.length} countries")
               refreshCountryResults(data.result.data)
 
+        when 'send-countries'
+          logger.in("&larr; send-countries")
+          query.setup(data.result.countries)
+
         when 'send-airports'
-          logger.okay("&larr; send-airports for #{data.result.country.data.name}")
+          logger.in("&larr; send-airports for #{data.result.country.name}")
           refreshAirportsResults(data.result.airports)
 
         when 'send-runways'
-          logger.okay("send-runways for: #{data.result.country.data.name}")
+          logger.in("send-runways for: #{data.result.country.name}")
 
         else
           logger.warn("unknown message: #{data}")
@@ -265,21 +296,24 @@ $ ->
     socket = new WebSocket(wsuri)
 
     socket.onopen = (event) ->
-      logger.okay("Connected!")
+      logger.info("Connected!")
 
       socket.onmessage = receive
       query = Query({
         logger: logger
         socket: socket
       })
-      query.setup()
+      logger.out("&rarr; countries-list")
+      socket.send(JSON.stringify({
+        type: 'countries-list'
+      }))
 
 ##############################################################################
   # Initialization #
   ##################
 
   logger = Logger({
-    maxLogLines: 16
+    maxLogLines: 13
   })
 
   wsconfig = $('#ws-config').data()
@@ -288,14 +322,3 @@ $ ->
     logger: logger
     wsuri: wsconfig.wsuri
   })
-
-  ### interactive nodes ###
-  countriesResultsNode = $('#query-countries-results')
-
-  ### update country TODO ###
-  refreshCountryResults = (matchingCountries) ->
-    countriesResultsNode.empty()
-    for country in matchingCountries
-      countriesResultsNode.append("""
-          <li>#{country.data.name} (#{country.data.code} / #{country.data.continent})</li>
-        """)

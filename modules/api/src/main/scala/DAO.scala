@@ -10,6 +10,7 @@ import scala.math.BigDecimal
  */
 trait DAO {
   def stats(implicit ec: DAOExecutionContext): Future[(Int, Int, Int)]
+  def countries(implicit ec: DAOExecutionContext): Future[Seq[Country]]
   def lookupAirportsByCountry(query: String)(implicit ec: DAOExecutionContext): Future[Either[Seq[Country], (Country, Seq[Airport])]]
   def lookupRunwaysByCountry(query: String)(implicit ec: DAOExecutionContext): Future[Either[Seq[Country], (Country, Seq[Runway])]]
   def airportsByCountry(implicit ec: DAOExecutionContext): Future[Seq[(Country, Int)]]

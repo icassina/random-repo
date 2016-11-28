@@ -14,37 +14,58 @@ object WSActor {
 
   sealed trait Message { type Resp <: Response}
   object Message {
+    case object CountriesList extends Message { type Resp = Response with Response.CountriesListResp }
     case class CountryQuery(str: String) extends Message { type Resp = Response with Response.CountryQueryResp }
 
-    implicit val countryQueryRead: Reads[Message.CountryQuery] = (
-      (JsPath \ "type").read[String].filter(_ == "country-query") and
-      (JsPath \ "query").read[String]
-    )((_, str) => Message.CountryQuery(str))
+    //implicit val countryQueryRead: Reads[CountryQuery] = (
+      //(JsPath \ "type").read[String].filter(_ == "country-query") and
+      //(JsPath \ "query").read[String]
+    //)((_, str) => CountryQuery(str))
+
+    //implicit val countriesListRead: Reads[CountriesList] = (
+      //(JsPath \ "type").read[String].filter(_ == "countries-list").map(_ => CountriesList())
+    //)
+
+    implicit val messageRead: Reads[Message] = (
+      (JsPath \ "type").read[String].flatMap {
+        case "countries-list" => Reads.pure(CountriesList)
+        case "country-query"  => (
+          (JsPath \ "query").read[String].map(CountryQuery.apply)
+        )
+      }
+    )
   }
   sealed trait Response
   object Response {
     sealed trait CountryQueryResp { self: Response => }
-    case class MatchingCountries(countries: Seq[Country]) extends Response with CountryQueryResp
-    case class CountryFound(country: Country) extends Response with CountryQueryResp
-    case object NoMatches extends Response with CountryQueryResp
-    case class SendAirports(country: Country, airports: Seq[Airport]) extends Response
-    case class SendRunways(country: Country, runways: Seq[Runway]) extends Response
+    sealed trait CountriesListResp { self: Response => }
+    case class MatchingCountries(countries: Seq[Country])               extends Response with CountryQueryResp
+    case class CountryFound(country: Country)                           extends Response with CountryQueryResp
+    case object NoMatches                                               extends Response with CountryQueryResp
+    case class SendCountries(countries: Seq[Country] )                  extends Response with CountriesListResp
+    case class SendAirports(country: Country, airports: Seq[Airport])   extends Response
+    case class SendRunways(country: Country, runways: Seq[Runway])      extends Response
 
-    implicit val countryQueryRespWrite: Writes[Response] = Writes[Response] {
-      case Response.NoMatches => Json.obj(
+    sealed trait Error extends Response
+    object Error {
+      case class MalformedMessage(msg: Message, errors: Seq[String]) extends Error with CountryQueryResp
+    }
+
+    implicit val responseWrite: Writes[Response] = Writes[Response] {
+      case NoMatches => Json.obj(
         "type"    -> "country-query-response",
         "result"  -> Json.obj(
           "type"  -> "no-matches"
         )
       )
-      case Response.MatchingCountries(countries) => Json.obj(
+      case MatchingCountries(countries) => Json.obj(
         "type"    -> "country-query-response",
         "result"  -> Json.obj(
           "type"  -> "matching-countries",
           "data"  -> countries
         )
       )
-      case Response.CountryFound(country) => Json.obj(
+      case CountryFound(country) => Json.obj(
         "type"    -> "country-query-response",
         "result"  -> Json.obj(
           "type"  -> "country-found",
@@ -53,7 +74,14 @@ object WSActor {
           )
         )
       )
-      case Response.SendAirports(country, airports) =>
+      case SendCountries(countries) =>
+        Json.obj(
+          "type"    -> "send-countries",
+          "result"  -> Json.obj(
+            "countries"   -> countries
+          )
+        )
+      case SendAirports(country, airports) =>
         Json.obj(
           "type"    -> "send-airports",
           "result"  -> Json.obj(
@@ -61,7 +89,7 @@ object WSActor {
             "airports"  -> AirportsFeatures(airports)
           )
         )
-      case Response.SendRunways(country, runways) =>
+      case SendRunways(country, runways) =>
         Json.obj(
           "type"    -> "send-runways",
           "result"  -> Json.obj(
@@ -76,38 +104,39 @@ object WSActor {
           "data"    -> errors
         )
       )
-    }
-    //case Response.SendRunways(country, runways) => Json.obj(
-      //"type"    -> "send-runways",
-      //"result"  -> Json.obj(
-        //"country"   -> country,
-        //"runways"   -> RunwaysFeatures(runways)
+      //case SendRunways(country, runways) => Json.obj(
+        //"type"    -> "send-runways",
+        //"result"  -> Json.obj(
+          //"country"   -> country,
+          //"runways"   -> RunwaysFeatures(runways)
+        //)
       //)
-    //)
-  }
-  sealed trait Error extends Response
-  object Error {
-    import Response._
-    case class MalformedMessage(msg: Message, errors: Seq[String]) extends Error with CountryQueryResp
+    }
   }
 }
 
 class WSActor(client: ActorRef)(implicit dao: DAO, ec: DAOExecutionContext) extends Actor {
-  import WSActor.Message._
+  import WSActor.Message
   import WSActor.Response
   import Response._
 
   private def sendResponse(r: Response) = client ! Json.toJson(r)
 
   def receive = {
-    case (o: JsObject) => o.validate[CountryQuery].fold(
+    case (o: JsObject) => o.validate[Message].fold(
       { errors =>
         println("error")
         Future.successful(())
       },
-      { query =>
-          println(s"query: ${query.str}")
-          dao.lookupAirportsByCountry(query.str).map { as =>
+      {
+        case Message.CountriesList => {
+          dao.countries.map { countries =>
+            sendResponse(SendCountries(countries))
+          }
+        }
+        case Message.CountryQuery(queryStr) => {
+          println(s"query: ${queryStr}")
+          dao.lookupAirportsByCountry(queryStr).map { as =>
             as.fold(
               { cs => if (cs.isEmpty) Seq(NoMatches) else Seq(MatchingCountries(cs)) },
               { case (country, airports) => Seq(CountryFound(country), SendAirports(country, airports)) }
@@ -117,6 +146,7 @@ class WSActor(client: ActorRef)(implicit dao: DAO, ec: DAOExecutionContext) exte
             println(resp.getClass.getName)
             sendResponse(resp)
           }))
+        }
       }
     )
     case x => {
