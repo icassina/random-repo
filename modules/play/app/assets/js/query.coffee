@@ -1,5 +1,36 @@
 $ ->
 
+  ### Utils ###
+  renderBoolean = (bool) ->
+    if bool
+      """<span class="label label-success">&#x2714;</span>"""
+    else
+      """<span class="label label-danger">&#x2716;</span>"""
+
+  fold = (value) -> (none) -> (somef) ->
+    if value?
+      somef(value)
+    else
+      none
+
+  renderOption = (value, someTag, noneTag) ->
+    if value? 
+      if someTag?
+        "<#{someTag}>#{value}</#{someTag}>"
+      else
+        "#{value}"
+    else
+      if noneTag?
+        "<#{noneTag}>?</#{noneTag}>"
+      else
+        "?"
+
+  renderLink = (link, text, alt) ->
+    if link?
+      """<a href="#{link}" target="_blank"">#{text}</a>"""
+    else
+      """#{alt}"""
+
 ##############################################################################
   ### Logger ###
   ##############
@@ -58,41 +89,47 @@ $ ->
       airports: {
         predef: new ol.style.Style({
           image: new ol.style.Circle({
-            fill: new ol.style.Fill({
-              color: 'rgba(127, 255, 127, 0.5)'
-            })
-            stroke: new ol.style.Stroke({
-              color: 'rgba(20, 180, 20, 0.75)'
-              width: 2
-            })
+            fill:   new ol.style.Fill(  {color: 'rgba(127, 255, 127, 0.5)' })
+            stroke: new ol.style.Stroke({color: 'rgba(10,  30,  10,  0.75)', width: 2})
             radius: 8
+          })
+        })
+        small: new ol.style.Style({
+          image: new ol.style.Circle({
+            fill:   new ol.style.Fill(  {color: 'rgba(127, 255, 127, 0.5)' })
+            stroke: new ol.style.Stroke({color: 'rgba(10,  30,  10,  0.75)', width: 2})
+            radius: 4
+          })
+        })
+        medium: new ol.style.Style({
+          image: new ol.style.Circle({
+            fill:   new ol.style.Fill(  {color: 'rgba(127, 127, 127, 0.6)' })
+            stroke: new ol.style.Stroke({color: 'rgba(10,  30,  10,  0.75)', width: 2})
+            radius: 6
+          })
+        })
+        large: new ol.style.Style({
+          image: new ol.style.Circle({
+            fill:   new ol.style.Fill(  {color: 'rgba(255, 127, 127, 0.7)' })
+            stroke: new ol.style.Stroke({color: 'rgba(10,  30,  10,  0.75)', width: 2})
+            radius: 15
           })
         })
         highlight: new ol.style.Style({
           image: new ol.style.Circle({
-            fill: new ol.style.Fill({
-              color: 'rgba(90, 255, 90, 0.75)'
-            })
-            stroke: new ol.style.Stroke({
-              color: 'rgba(0, 180, 0, 0.75)'
-              width: 2
-            })
-            radius: 12
-          })
-          zIndex: 2
-        })
-        selected: new ol.style.Style({
-          image: new ol.style.Circle({
-            fill: new ol.style.Fill({
-              color: 'rgba(255, 180, 25, 0.8)'
-            })
-            stroke: new ol.style.Stroke({
-              color: 'rgba(180, 90, 0, 0.8)'
-              width: 2
-            })
+            fill:   new ol.style.Fill(  {color: 'rgba(90,  255, 90,  0.75)' })
+            stroke: new ol.style.Stroke({color: 'rgba(0,   180, 0,   0.75)', width: 2})
             radius: 12
           })
           zIndex: 1
+        })
+        selected: new ol.style.Style({
+          image: new ol.style.Circle({
+            fill:   new ol.style.Fill(  {color: 'rgba(255, 180, 25,  0.8)' })
+            stroke: new ol.style.Stroke({color: 'rgba(180, 90,  0,   0.8)', width: 2})
+            radius: 12
+          })
+          zIndex: 2
         })
       }
       runways: {
@@ -119,7 +156,7 @@ $ ->
             })
             radius: 12
           })
-          zIndex: 2
+          zIndex: 1
         })
         selected: new ol.style.Style({
           image: new ol.style.Circle({
@@ -132,7 +169,7 @@ $ ->
             })
             radius: 12
           })
-          zIndex: 1
+          zIndex: 2
         })
       }
     }
@@ -154,7 +191,12 @@ $ ->
     airportsLayer = new ol.layer.Vector({
       id: 'airports'
       source: airportsSource
-      style: styles.airports.predef
+      style: (feat, resolution) ->
+        airport = feat.getProperties()
+        switch(airport.airportType)
+          when 'small_airport' then styles.airports.small
+          when 'medium_airport' then styles.airports.medium
+          else styles.airports.predef
     })
 
     runwaysLayer = new ol.layer.Vector({
@@ -193,26 +235,86 @@ $ ->
       style: [styles.runways.selected]
     })
 
+    popup = new ol.Overlay({
+      element: $('#query-info-box')[0]
+    })
+
     map = new ol.Map({
       target: config.mapId
     })
     map.addLayer(osmTiles)
     map.addLayer(airportsLayer)
     map.addLayer(runwaysLayer)
+    map.addOverlay(popup)
     map.setView(view)
 
     map.getInteractions().extend([
-      selectAirportInteraction
+      hoverRunwayInteraction
       hoverAirportInteraction
       selectRunwayInteraction
-      hoverRunwayInteraction
+      selectAirportInteraction
     ])
+
+    showPopup = (generate) -> (feat) ->
+      element = $(popup.getElement())
+      coordinates = feat.getGeometry().getCoordinates()
+      element.popover('destroy')
+      popup.setPosition(coordinates)
+      generated = generate(feat, coordinates)
+      element.popover({
+        placement:  'right'
+        animation:  true
+        html:       true
+        title:      """<p><a href="#" class="close">&times</a></p>"""
+        content:    generated.content
+      })
+      element.popover('show')
+      $('.popover a.close').click(() ->
+        element.popover('destroy')
+      )
+
+    ### TODO: move this big chunk to somewhere else ###
+    generateAirport = (feat, coords) ->
+      console.log(feat)
+      console.log(coords)
+      a = feat.getProperties()
+      position = ol.coordinate.toStringHDMS(coords)
+      strong = (value) -> fold(value)('?')((v) -> "<strong>#{v}</strong>")
+      elevation = fold(a.elevation)('?')((v) -> "<strong>#{v}</strong> (ft)")
+      content = """
+        <ul class="list-group">
+          <li class="list-group-item list-group-item-info"><strong>#{a.name}</strong> <span class="badge">#{a.ident}</span></li>
+          <li class="list-group-item">Type: <strong>#{a.airportType}</strong></li>
+          <li class="list-group-item">Region: #{strong(a.isoRegion)}</li>
+          <li class="list-group-item">Municipality: #{strong(a.municipality)}</li>
+          <li class="list-group-item">Position: <strong><span class="text-primary">#{position}</span></strong></li>
+          <li class="list-group-item">Elevation: #{elevation}</li>
+          <li class="list-group-item">Scheduled Service: #{renderBoolean(a.scheduledService)}</li>
+          <li class="list-group-item">
+            GPS: #{renderOption(a.gpsCode, 'strong')} |
+            IATA: #{renderOption(a.iataCode, 'strong')} |
+            Local: #{renderOption(a.localCode, 'strong')}
+          </li>
+          <li class="list-group-item">#{renderLink(a.homeLink, 'Home: &rArr;', 'Home: ?')}</li>
+          <li class="list-group-item">#{renderLink(a.wikipediaLink, 'Wikipedia: &rArr;', 'Wikipedia: ?')}</li>
+          <li  class="list-group-item">Keywords: #{renderOption(a.keywords)}</li>
+        </div>
+      """
+
+      {
+        title: ""
+        content: content
+      }
+
+    showAirportPopup = showPopup(generateAirport)
 
     selectedAirport = selectAirportInteraction.getFeatures()
     selectedAirport.on('add', (event) ->
       feat = event.target.item(0)
+      console.log(feat)
+      showAirportPopup(feat)
+      airport = feat.getProperties()
       for cb in airportCallbacks
-        airport = feat.getProperties()
         cb(airport)
     )
 
@@ -265,6 +367,7 @@ $ ->
     })
 
     update = (data) ->
+      #logger.debug("TableResults #{target} update [#{data.length}]")
       dataTable.rows.add(extract(data)).draw(true)
 
     {
@@ -279,7 +382,7 @@ $ ->
     TableResults({
       logger: config.logger
       target: 'airports-results-table'
-      height: '41vh'
+      height: '39vh'
       extract: (airports) ->
         [
           a.id
@@ -298,10 +401,11 @@ $ ->
   ### Runways Results ###
   #######################
   RunwaysResults = (config) ->
+
     TableResults({
       logger: config.logger
       target: 'runways-results-table'
-      height: '19vh'
+      height: '15vh'
       extract: (runways) ->
         [
           r.id
@@ -309,13 +413,11 @@ $ ->
           r.surface
           r.length
           r.width
-          r.lighted
-          r.closed
+          renderBoolean(r.lighted)
+          renderBoolean(! r.closed)
           r.leHeading
-          r.leHelevation
-        ] for r in (
-          feat.properties for feat in runways
-        )
+          r.leElevation
+        ] for r in runways
     })
 
 
@@ -441,6 +543,7 @@ $ ->
       logger.info(
         """&uarr; [#{runway.leIdent}]"""
       )
+    )
 
     refreshCountryResults = (countries) ->
       countriesResults.update(countries)
@@ -450,8 +553,8 @@ $ ->
       map.updateAirports(airports)
 
     refreshRunwaysResults = (runways) ->
-      runwaysResults.update(runways.features)
-      map.updateRunways(runways)
+      runwaysResults.update(runways)
+      #map.updateRunways(runways)
       
 
     # receive function
@@ -482,7 +585,7 @@ $ ->
           refreshAirportsResults(data.result.airports)
 
         when 'send-runways'
-          logger.in("send-runways for: #{data.result.country.name}")
+          logger.in("&larr; send-runways for: #{data.result.country.name}")
           refreshRunwaysResults(data.result.runways)
 
         else
@@ -510,7 +613,7 @@ $ ->
   ##################
 
   logger = Logger({
-    maxLogLines: 13
+    maxLogLines: 11
   })
 
   wsconfig = $('#ws-config').data()

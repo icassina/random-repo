@@ -105,6 +105,17 @@ object Messages {
         ),
         "properties" -> Json.toJson(r.runway)
       )
+    }.orElse {
+      r.runway.hePosition.map(p => Seq(p.getX, p.getY)).map { coords =>
+        Json.obj(
+          "type"      -> "Feature",
+          "geometry"  -> Json.obj(
+            "type"        -> "Point",
+            "coordinates" -> coords
+          ),
+          "properties" -> Json.toJson(r.runway)
+        )
+      }
     }.getOrElse(JsNull)
   }
 

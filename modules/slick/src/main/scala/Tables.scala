@@ -51,24 +51,6 @@ trait Tables {
   lazy val Countries = new TableQuery(tag => new Countries(tag))
 
   import icassina.lunatech.Airport
-  case class Airportw(
-    id:               Int,
-    ident:            String,
-    airportType:      AirportType,
-    name:             String,
-    position:         Point,
-    elevation:        Option[Int] = None,
-    isoCountry:       String,
-    isoRegion:        String,
-    municipality:     Option[String] = None,
-    scheduledService: Boolean,
-    gpsCode:          Option[String] = None,
-    iataCode:         Option[String] = None,
-    localCode:        Option[String] = None,
-    homeLink:         Option[String] = None,
-    wikipediaLink:    Option[String] = None,
-    keywords:         Option[String] = None
-  )
   implicit def GetResultAirport(implicit e0: GR[Int], e1: GR[String], e2: GR[Option[Int]], e3: GR[Option[String]], e4: GR[Boolean]): GR[Airport] = GR {
     prs => import prs._
     Airport.tupled((<<[Int], <<[String], <<[AirportType], <<[String], prs.nextGeometry[Point], <<?[Int], <<[String], <<[String], <<?[String], <<[Boolean], <<?[String], <<?[String], <<?[String], <<?[String], <<?[String], <<?[String]))
@@ -100,28 +82,6 @@ trait Tables {
     val index2 = index("airports_keywords_idx", keywords)
   }
   lazy val Airports = new TableQuery(tag => new Airports(tag))
-
-  //case class Runway(
-    //id:                   Int,
-    //airportRef:           Int,
-    //length:               Option[Int] = None,
-    //width:                Option[Int] = None,
-    //surface:              Option[String] = None,
-    //surfaceStd:           Surface,
-    //lighted:              Boolean,
-    //closed:               Boolean,
-    //leIdent:              Option[String] = None,
-    //lePosition:           Option[Point] = None,
-    //leElevation:          Option[Int] = None,
-    //leHeading:            Option[BigDecimal] = None,
-    //leDisplacedThreshold: Option[Int] = None,
-    //heIdent:              Option[String] = None,
-    //hePosition:           Option[Point] = None,
-    //heElevation:          Option[Int] = None,
-    //heHeading:            Option[BigDecimal] = None,
-    //heDisplacedThreshold: Option[Int] = None
-  //)
-
 
   implicit def GetResultRunway(implicit e0: GR[Int], e1: GR[Option[Int]], e2: GR[Option[String]], e3: GR[String], e4: GR[Boolean], e5: GR[Option[BigDecimal]]): GR[Runway] = GR{
     prs => import prs._

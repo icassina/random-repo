@@ -15,7 +15,7 @@ object WSActor {
   sealed trait Message { type Resp <: Response}
   object Message {
     case object CountriesList extends Message { type Resp = Response with Response.CountriesListResp }
-    case class CountryQuery(str: String) extends Message { type Resp = Response with Response.CountryQueryResp }
+    case class CountryQuery(countryCode: String) extends Message { type Resp = Response with Response.CountryQueryResp }
 
     //implicit val countryQueryRead: Reads[CountryQuery] = (
       //(JsPath \ "type").read[String].filter(_ == "country-query") and
@@ -39,16 +39,16 @@ object WSActor {
   object Response {
     sealed trait CountryQueryResp { self: Response => }
     sealed trait CountriesListResp { self: Response => }
-    case class MatchingCountries(countries: Seq[Country])               extends Response with CountryQueryResp
     case class CountryFound(country: Country)                           extends Response with CountryQueryResp
     case object NoMatches                                               extends Response with CountryQueryResp
+    case class SendAirports(country: Country, airports: Seq[Airport])   extends Response with CountryQueryResp
+    case class SendRunways(country: Country, runways: Seq[Runway])      extends Response with CountryQueryResp
     case class SendCountries(countries: Seq[Country] )                  extends Response with CountriesListResp
-    case class SendAirports(country: Country, airports: Seq[Airport])   extends Response
-    case class SendRunways(country: Country, runways: Seq[Runway])      extends Response
 
     sealed trait Error extends Response
     object Error {
       case class MalformedMessage(msg: Message, errors: Seq[String]) extends Error with CountryQueryResp
+      case class NotCountryCode(queryStr: String) extends Error with CountryQueryResp
     }
 
     implicit val responseWrite: Writes[Response] = Writes[Response] {
@@ -56,13 +56,6 @@ object WSActor {
         "type"    -> "country-query-response",
         "result"  -> Json.obj(
           "type"  -> "no-matches"
-        )
-      )
-      case MatchingCountries(countries) => Json.obj(
-        "type"    -> "country-query-response",
-        "result"  -> Json.obj(
-          "type"  -> "matching-countries",
-          "data"  -> countries
         )
       )
       case CountryFound(country) => Json.obj(
@@ -94,7 +87,7 @@ object WSActor {
           "type"    -> "send-runways",
           "result"  -> Json.obj(
             "country"   -> country,
-            "runways"   -> RunwaysFeatures(runways)
+            "runways"   -> runways
           )
         )
       case Error.MalformedMessage(msg, errors) => Json.obj(
@@ -104,13 +97,13 @@ object WSActor {
           "data"    -> errors
         )
       )
-      //case SendRunways(country, runways) => Json.obj(
-        //"type"    -> "send-runways",
-        //"result"  -> Json.obj(
-          //"country"   -> country,
-          //"runways"   -> RunwaysFeatures(runways)
-        //)
-      //)
+      case Error.NotCountryCode(queryStr) => Json.obj(
+        "type"    -> "error",
+        "result"  -> Json.obj(
+          "type"  -> "not-country-code",
+          "data"  -> queryStr
+        )
+      )
     }
   }
 }
@@ -134,19 +127,17 @@ class WSActor(client: ActorRef)(implicit dao: DAO, ec: DAOExecutionContext) exte
             sendResponse(SendCountries(countries))
           }
         }
-        // TODO: simplify this mess (and on API and Slick modules)
         case Message.CountryQuery(queryStr) => {
-          println(s"query: ${queryStr}")
-          dao.lookupAirportsByCountry(queryStr).map { as =>
-            as.fold(
-              { cs => if (cs.isEmpty) Seq(NoMatches) else Seq(MatchingCountries(cs)) },
-              { case (country, airports) => Seq(CountryFound(country), SendAirports(country, airports)) }
-            )
-          }.map(_.foreach(resp =>{
-            println("response:")
-            println(resp.getClass.getName)
-            sendResponse(resp)
-          }))
+          if (queryStr.length != 2) {
+            sendResponse(Error.NotCountryCode(queryStr))
+          } else {
+
+            val airportsQuery = dao.airportsByCountry(queryStr)
+            val runwaysQuery = dao.runwaysByCountry(queryStr)
+
+            airportsQuery.map(res => sendResponse(res.fold[Message.CountryQuery#Resp](NoMatches)(SendAirports.tupled)))
+            runwaysQuery.map(res => sendResponse(res.fold[Message.CountryQuery#Resp](NoMatches)(SendRunways.tupled)))
+          }
         }
       }
     )

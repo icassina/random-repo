@@ -8,35 +8,33 @@
     "lib/openlayers/ol.js",
     "lib/jquery/jquery.js",
     "lib/selectize.js/js/standalone/selectize.js",
-    "lib/datatables/js/jquery.dataTables.js"
+    "lib/datatables/js/jquery.dataTables.js",
+    "lib/bootstrap/js/tooltip.js",
+    "lib/bootstrap/js/popover.js"
   )
 ) {
   <script src="@routes.Assets.versioned("js/query.js")" type="application/javascript"></script>
-  <div id="query-info-box" class="alert alert-info alert-dismissible hidden" role="alert" style="position: relative;">
-    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-      <span aria-hidden="true">&times;</span></button>
-      <div id="query-info-panel">
-        Test
-      </div>
-    </button>
-  </div>
   <div class="row">
     <div class="col-md-4">
       @airports_table()
     </div>
     <div class="col-md-8">
       <div id="map"></div>
+      <div style="display: none;">
+        <div id="query-info-box">
+        </div>
+      </div>
     </div>
   </div>
   <div class="row">
     <div class="col-md-4">
-      @runways_table()
-    </div>
-    <div class="col-md-8">
       <div class="panel panel-success">
         <div class="panel-body" id="query-log-area">
         </div>
       </div>
+    </div>
+    <div class="col-md-8">
+      @runways_table()
     </div>
   </div>
 }

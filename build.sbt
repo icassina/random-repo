@@ -26,3 +26,4 @@ lazy val play = (project in file("modules/play"))
   .aggregate(api, slick)
   .dependsOn(api, slick)
 
+onLoad in Global := (Command.process("project play", _: State)) compose (onLoad in Global).value
