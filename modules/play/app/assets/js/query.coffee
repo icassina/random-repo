@@ -86,90 +86,57 @@ $ ->
     airportCallbacks = []
     runwayCallbacks = []
 
-    # TODO: finish styles (airportType, runways(length/width, light, open)
-    styles = {
+    mapHoverCode = $('#map-hover-code')
+    mapHoverInfo = $('#map-hover-info')
+
+    mkColor = (alpha) -> (e) -> "rgba(#{e.r}, #{e.g}, #{e.b}, #{alpha})"
+
+    mkShape = {
+      circle:   (def) -> new ol.style.Circle(def)
+      triangle: (def) -> new ol.style.RegularShape($.extend(def, {points: 3, angle: 0, rotation: Math.PI / 4}))
+      square:   (def) -> new ol.style.RegularShape($.extend(def, {points: 4, angle: Math.PI / 4}))
+      plus:     (def) -> new ol.style.RegularShape($.extend(def, {points: 4, angle: 0, radius2: 0}))
+      cross:    (def) -> new ol.style.RegularShape($.extend(def, {points: 4, angle: Math.PI / 4, radius2: 0}))
+      star:     (def) -> new ol.style.RegularShape($.extend(def, {points: 5, angle: 0, radius2: (def.radius / 2)}))
+    }
+
+
+    mkStyle = (e) ->
+      fill    = new ol.style.Fill({color: mkColor(0.6)(e.color)})
+      stroke  = new ol.style.Stroke({color: mkColor(0.8)(e.color), width: 2})
+      shape = mkShape[e.shape]({fill: fill, stroke: stroke, radius: e.radius})
+      #shape   = mkShape[e.shape] ({fill: fill, stroke: stroke, radius: e.radius})
+      new ol.style.Style({image: shape, zIndex: e.index})
+
+
+    buildStyles = (stylesDef) ->
+      result = {}
+      for section, entries of stylesDef
+        result[section] = {}
+        for subsection, entry of entries
+          result[section][subsection] = mkStyle(entry)
+      result
+      
+    stylesDef = {
       airports: {
-        predef: new ol.style.Style({
-          image: new ol.style.Circle({
-            fill:   new ol.style.Fill(  {color: 'rgba(127, 255, 127, 0.5)' })
-            stroke: new ol.style.Stroke({color: 'rgba(10,  30,  10,  0.75)', width: 2})
-            radius: 8
-          })
-          zIndex: 1
-        })
-        small: new ol.style.Style({
-          image: new ol.style.Circle({
-            fill:   new ol.style.Fill(  {color: 'rgba(127, 255, 127, 0.5)' })
-            stroke: new ol.style.Stroke({color: 'rgba(10,  30,  10,  0.75)', width: 2})
-            radius: 4
-          })
-          zIndex: 2
-        })
-        medium: new ol.style.Style({
-          image: new ol.style.Circle({
-            fill:   new ol.style.Fill(  {color: 'rgba(127, 127, 127, 0.6)' })
-            stroke: new ol.style.Stroke({color: 'rgba(10,  30,  10,  0.75)', width: 2})
-            radius: 6
-          })
-          zIndex: 2
-        })
-        large: new ol.style.Style({
-          image: new ol.style.Circle({
-            fill:   new ol.style.Fill(  {color: 'rgba(255, 127, 127, 0.7)' })
-            stroke: new ol.style.Stroke({color: 'rgba(10,  30,  10,  0.75)', width: 2})
-            radius: 15
-          })
-          zIndex: 2
-        })
-        highlight: new ol.style.Style({
-          image: new ol.style.Circle({
-            fill:   new ol.style.Fill(  {color: 'rgba(90,  255, 90,  0.75)' })
-            stroke: new ol.style.Stroke({color: 'rgba(0,   180, 0,   0.75)', width: 2})
-            radius: 12
-          })
-          zIndex: 3
-        })
-        selected: new ol.style.Style({
-          image: new ol.style.Circle({
-            fill:   new ol.style.Fill(  {color: 'rgba(255, 180, 25,  0.8)' })
-            stroke: new ol.style.Stroke({color: 'rgba(180, 90,  0,   0.8)', width: 2})
-            radius: 12
-          })
-          zIndex: 4
-        })
+        large_airport:  { color: {r: 217, g: 100, b:  89}, radius: 16, shape: 'circle',   index: 4 }
+        medium_airport: { color: {r: 242, g: 174, b: 114}, radius: 12, shape: 'circle',   index: 3 }
+        small_airport:  { color: {r: 242, g: 227, b: 148}, radius:  8, shape: 'circle',   index: 2 }
+        balloonport:    { color: {r: 172, g:  83, b: 147}, radius:  6, shape: 'circle',   index: 2 }
+        heliport:       { color: {r: 140, g:  70, b:  70}, radius:  6, shape: 'plus',     index: 2 }
+        seaplane_base:  { color: {r:  82, g: 118, b: 183}, radius:  6, shape: 'circle',   index: 2 }
+        closed:         { color: {r:  50, g:  50, b:  50}, radius:  4, shape: 'cross',    index: 1 }
+        highlight:      { color: {r:  90, g: 255, b:  90}, radius: 16, shape: 'circle',   index: 8 } # FIXME
+        selected:       { color: {r: 255, g: 180, b:  25}, radius: 16, shape: 'circle',   index: 9 } # FIXME
       }
       runways: {
-        predef: new ol.style.Style({
-          image: new ol.style.RegularShape({
-            fill: new ol.style.Fill(    {color: 'rgba(127, 127, 255, 0.5)'})
-            stroke: new ol.style.Stroke({color: 'rgba(20, 20, 180, 0.75)', width: 2})
-            points: 4
-            radius: 8
-            angle: Math.PI / 4
-          })
-        })
-        highlight: new ol.style.Style({
-          image: new ol.style.RegularShape({
-            fill: new ol.style.Fill(    {color: 'rgba(90, 90, 255, 0.75)'})
-            stroke: new ol.style.Stroke({color: 'rgba(0, 0, 180, 0.75)', width: 2})
-            points: 4
-            radius: 12
-            angle: Math.Pi / 4
-          })
-          zIndex: 3
-        })
-        selected: new ol.style.Style({
-          image: new ol.style.RegularShape({
-            fill: new ol.style.Fill(    {color: 'rgba(25, 255, 180, 0.8)'})
-            stroke: new ol.style.Stroke({color: 'rgba(0, 180, 90, 0.8)', width: 2})
-            points: 4
-            radius: 12
-            angle: Math.PI / 4
-          })
-          zIndex: 4
-        })
+        predef:         { color: {r: 127, g: 127, b: 255}, radius:  8, shape: 'triangle', index: 2 }
+        highlight:      { color: {r:  90, g: 255, b:  90}, radius: 12, shape: 'triangle', index: 8 } # FIXME
+        selected:       { color: {r: 255, g: 180, b:  25}, radius: 12, shape: 'triangle', index: 9 } # FIXME
       }
     }
+
+    styles = buildStyles(stylesDef)
 
     osmTiles = new ol.layer.Tile({
       source: new ol.source.OSM()
@@ -189,20 +156,17 @@ $ ->
       id: 'airports'
       source: airportsSource
       style: (feat, resolution) ->
-        airport = feat.getProperties()
-        switch(airport.airportType)
-          when 'small_airport' then styles.airports.small
-          when 'medium_airport' then styles.airports.medium
-          when 'large_airport' then styles.airports.large
-          else styles.airports.predef
+        airportType = feat.get('airportType')
+        [styles.airports[airportType]]
     })
 
     runwaysLayer = new ol.layer.Vector({
       id: 'runways'
       source: runwaysSource
       style: (feat, resolution) ->
-        #runway = feat.getProperties()
-        styles.runway.predef
+        runway = feat.getProperties()
+        #console.log(runway)
+        [styles.runways.predef]
     })
 
     view = new ol.View({
@@ -266,19 +230,39 @@ $ ->
         content:    content(feat, coords)
       })
       element.popover('show')
-      #$('.popover a.close').click(() ->
-        #element.popover('destroy')
-      #)
+
+    classForAirportType = (airportType) ->
+      switch(airportType)
+        when 'small_airport'  then 'warning'
+        when 'medium_airport' then 'warning'
+        when 'large_airport'  then 'danger'
+        when 'baloonport'     then 'info'
+        when 'seaplane_base'  then 'primary'
+        when 'heliport'       then 'success'
+        when 'closed'         then 'default'
+        else 'default'
+
+    classForRunway = (runway) ->
+      if runway.closed
+        'danger'
+      else
+        if runway.lighted
+          'success'
+        else
+          'warning'
+
+
 
     ### TODO: move this big chunk to somewhere else ###
     airportContent = (feat, coords) ->
       a = feat.getProperties()
       position = ol.coordinate.toStringHDMS(coords)
       strong = (value) -> fold(value)('?')((v) -> "<strong>#{v}</strong>")
+      codeClass = "pull-right LABEL LAbel-#{classForAirportType(a.airportType)}"
       elevation = fold(a.elevation)('?')((v) -> "<strong>#{v}</strong> (ft)")
       """
         <ul class="list-group box-shadow">
-          <li class="list-group-item list-group-item-info"><strong>#{a.name}</strong> <span class="badge">#{a.ident}</span></li>
+          <li class="list-group-item list-group-item-info"><strong>#{a.name}</strong> <span class="#{codeClass}">#{a.ident}</span></li>
           <li class="list-group-item">Type: <strong>#{a.airportType}</strong></li>
           <li class="list-group-item">Region: #{strong(a.isoRegion)}</li>
           <li class="list-group-item">Municipality: #{strong(a.municipality)}</li>
@@ -297,6 +281,28 @@ $ ->
       """
 
     showAirportPopup = showPopup(airportContent)
+    #showRunwayPopup = showPopup(runwayContent)
+
+    hideHoverInfo = () ->
+      mapHoverCode.empty()
+      mapHoverCode.attr('class', 'pull-right label hidden')
+      mapHoverInfo.empty()
+
+    showAiportHoverInfo = (feat) ->
+      a = feat.getProperties()
+      typeClass = "label-#{classForAirportType(a.airportType)}"
+      mapHoverCode.removeClass('hidden')
+      mapHoverCode.addClass(typeClass)
+      mapHoverCode.html("""#{a.ident}""")
+      mapHoverInfo.html("""#{a.name}""")
+
+    showRunwayHoverInfo = (feat) ->
+      r = feat.getProperties()
+      typeClass = "label-#{classForRunway(r)}"
+      mapHoverCode.removeClass('hidden')
+      #mapHoverCode.addClass(typeClass)
+      mapHoverCode.html("""#{renderBoolean(r.lighted)} #{renderBoolean(! r.closed)}""")
+      mapHoverInfo.html("""#{r.leIdent} #{r.surface}""")
 
     panTo = (location) ->
       pan = ol.animation.pan({
@@ -328,6 +334,14 @@ $ ->
       selectedAirport.push(feat)
       noNotify = false
 
+    highlightedAirport = hoverAirportInteraction.getFeatures()
+    highlightedAirport.on('add', (event) ->
+      feat = event.target.item(0)
+      showAiportHoverInfo(feat)
+    )
+    highlightedAirport.on('remove', hideHoverInfo)
+      
+
     selectedRunway = selectRunwayInteraction.getFeatures()
     selectedRunway.on('add', (event) ->
       feat = event.target.item(0)
@@ -336,6 +350,12 @@ $ ->
         for cb in runwayCallbacks
           cb(runway)
     )
+    highlightedRunway = hoverRunwayInteraction.getFeatures()
+    highlightedRunway.on('add', (event) ->
+      feat = event.target.item(0)
+      showRunwayHoverInfo(feat)
+    )
+    highlightedRunway.on('remove', hideHoverInfo)
 
     registerAirportCallback = (cb) ->
       airportCallbacks.push(cb)
@@ -372,6 +392,8 @@ $ ->
       }
       runwaysSource.clear()
       runwaysSource.addFeatures(geoJSON.readFeatures(features))
+
+    $('#map-hover-container').removeClass('hidden')
 
     {
       updateAirports: updateAirports
