@@ -21,7 +21,8 @@ object Messages {
       "name"            -> c.name,
       "continent"       -> c.continent,
       "wikipedia_link"  -> c.wikipediaLink,
-      "keywords"        -> c.keywords
+      "keywords"        -> c.keywords,
+      "type"            -> "country"
     )
   }
 
@@ -42,7 +43,8 @@ object Messages {
       "localCode"         -> a.localCode,
       "homeLink"          -> a.homeLink,
       "wikipediaLink"     -> a.wikipediaLink,
-      "keywords"          -> a.keywords
+      "keywords"          -> a.keywords,
+      "type"              -> "airport"
     )
   }
 
@@ -65,7 +67,8 @@ object Messages {
       "hePosition"            -> r.hePosition.map(p => Seq(p.getX, p.getY)),
       "heElevation"           -> r.heElevation,
       "heHeading"             -> r.heHeading,
-      "heDisplacedThreshold"  -> r.heDisplacedThreshold
+      "heDisplacedThreshold"  -> r.heDisplacedThreshold,
+      "type"                  -> "runway"
     )
   }
 

@@ -31,6 +31,9 @@ $ ->
     else
       """#{alt}"""
 
+  airplane = "&#x2708;"
+  upArrow = "&#x2b06;"
+
 ##############################################################################
   ### Logger ###
   ##############
@@ -42,11 +45,11 @@ $ ->
     level2class = (lvl) ->
       switch (lvl)
         when 'trace'  then 'text-muted'
-        when 'debug'  then ''
-        when 'info'   then 'text-info'
-        when 'in'     then 'text-success'
-        when 'out'    then 'text-primary'
-        when 'warn'   then 'text-warning'
+        when 'debug'  then 'text-muted'
+        when 'info'   then 'text-warning'
+        when 'in'     then 'text-primary'
+        when 'out'    then 'text-success'
+        when 'warn'   then 'text-danger'
         when 'err'    then 'text-danger'
         else ''
 
@@ -101,42 +104,80 @@ $ ->
     }
 
 
-    mkStyle = (e) ->
-      fill    = new ol.style.Fill({color: mkColor(0.6)(e.color)})
-      stroke  = new ol.style.Stroke({color: mkColor(0.8)(e.color), width: 2})
-      shape = mkShape[e.shape]({fill: fill, stroke: stroke, radius: e.radius})
-      #shape   = mkShape[e.shape] ({fill: fill, stroke: stroke, radius: e.radius})
-      new ol.style.Style({image: shape, zIndex: e.index})
-
+    mkStyle = (e) -> (type) ->
+      switch(type)
+          when 'highlight'
+            fill    = new ol.style.Fill({color: mkColor(0.2)(e.color)})
+            stroke  = new ol.style.Stroke({color: mkColor(0.9)(e.color), width: 4})
+            shape = mkShape[e.shape]({fill: fill, stroke: stroke, radius: (1.8 * e.radius)})
+            new ol.style.Style({image: shape, zIndex: (e.index+40)})
+          when 'selected'
+            fill    = new ol.style.Fill({color: mkColor(0.8)(e.color)})
+            stroke  = new ol.style.Stroke({color: mkColor(1.0)(e.color), width: 4})
+            shape = mkShape[e.shape]({fill: fill, stroke: stroke, radius: (1.4 * e.radius)})
+            new ol.style.Style({image: shape, zIndex: (e.index+20)})
+          else
+            fill    = new ol.style.Fill({color: mkColor(0.6)(e.color)})
+            stroke  = new ol.style.Stroke({color: mkColor(0.8)(e.color), width: 2})
+            shape = mkShape[e.shape]({fill: fill, stroke: stroke, radius: e.radius})
+            new ol.style.Style({image: shape, zIndex: e.index})
 
     buildStyles = (stylesDef) ->
       result = {}
       for section, entries of stylesDef
         result[section] = {}
         for subsection, entry of entries
-          result[section][subsection] = mkStyle(entry)
+          result[section][subsection] = {
+            predef:     { zoom_0: mkStyle(entry)('predef') }
+            highlight:  { zoom_0: mkStyle(entry)('highlight') }
+            selected:   { zoom_0: mkStyle(entry)('selected') }
+          }
+
       result
       
     stylesDef = {
       airports: {
-        large_airport:  { color: {r: 217, g: 100, b:  89}, radius: 16, shape: 'circle',   index: 4 }
-        medium_airport: { color: {r: 242, g: 174, b: 114}, radius: 12, shape: 'circle',   index: 3 }
-        small_airport:  { color: {r: 242, g: 227, b: 148}, radius:  8, shape: 'circle',   index: 2 }
-        balloonport:    { color: {r: 172, g:  83, b: 147}, radius:  6, shape: 'circle',   index: 2 }
-        heliport:       { color: {r: 140, g:  70, b:  70}, radius:  6, shape: 'plus',     index: 2 }
-        seaplane_base:  { color: {r:  82, g: 118, b: 183}, radius:  6, shape: 'circle',   index: 2 }
-        closed:         { color: {r:  50, g:  50, b:  50}, radius:  4, shape: 'cross',    index: 1 }
-        highlight:      { color: {r:  90, g: 255, b:  90}, radius: 16, shape: 'circle',   index: 8 } # FIXME
-        selected:       { color: {r: 255, g: 180, b:  25}, radius: 16, shape: 'circle',   index: 9 } # FIXME
+        large_airport:  { color: {r: 217, g: 100, b:  89}, radius: 18, shape: 'circle',   index: 9 }
+        medium_airport: { color: {r: 242, g: 174, b: 114}, radius: 14, shape: 'circle',   index: 8 }
+        small_airport:  { color: {r: 242, g: 227, b: 148}, radius: 10, shape: 'circle',   index: 7 }
+        seaplane_base:  { color: {r:  82, g: 118, b: 183}, radius:  8, shape: 'circle',   index: 6 }
+        balloonport:    { color: {r: 172, g:  83, b: 147}, radius:  8, shape: 'circle',   index: 5 }
+        heliport:       { color: {r: 140, g:  70, b:  70}, radius:  8, shape: 'plus',     index: 5 }
+        closed:         { color: {r:  50, g:  50, b:  50}, radius:  6, shape: 'cross',    index: 4 }
       }
       runways: {
-        predef:         { color: {r: 127, g: 127, b: 255}, radius:  8, shape: 'triangle', index: 2 }
-        highlight:      { color: {r:  90, g: 255, b:  90}, radius: 12, shape: 'triangle', index: 8 } # FIXME
-        selected:       { color: {r: 255, g: 180, b:  25}, radius: 12, shape: 'triangle', index: 9 } # FIXME
+        lighted:        { color: {r:  50, g: 150, b:  70}, radius:  5, shape: 'square',   index: 3 }
+        notLighted:     { color: {r:  50, g:  80, b: 180}, radius:  4, shape: 'triangle', index: 2 }
+        closed:         { color: {r:  50, g:  50, b:  50}, radius:  3, shape: 'cross',    index: 1 }
       }
     }
 
+    featFold = (feat) -> (onAirport, onRunway) ->
+      switch (feat.get('type'))
+        when 'airport' then onAirport(feat)
+        when 'runway' then onRunway(feat)
+
+    runwayStyleKey = (feat) ->
+      closed = feat.get('closed')
+      lighted = feat.get('lighted')
+      if closed then 'closed' else if lighted then 'lighted' else 'notLighted'
+
+    airportStyleKey = (feat) ->
+      feat.get('airportType')
+
     styles = buildStyles(stylesDef)
+
+    runwayStyle = (feat) ->
+      styles.runways[runwayStyleKey(feat)]
+
+    airportStyle = (feat) ->
+      styles.airports[airportStyleKey(feat)]
+
+    featStyle = (feat) ->
+      featFold(feat)(
+        (a) -> airportStyle(feat),
+        (r) -> runwayStyle(feat)
+      )
 
     osmTiles = new ol.layer.Tile({
       source: new ol.source.OSM()
@@ -156,17 +197,23 @@ $ ->
       id: 'airports'
       source: airportsSource
       style: (feat, resolution) ->
-        airportType = feat.get('airportType')
-        [styles.airports[airportType]]
+        #console.log('airport style function')
+        #console.log(resolution)
+        [airportStyle(feat).predef.zoom_0]
+        #zoomKey = "zoom_#{zoom}"
+        #styleBase = airportStyle(feat).predef
+        #if zoomKey of styleBase
+          #[styleBase[zoomKey]]
+        #else
+          #original = styleBase["zoom_0"]
+
     })
 
     runwaysLayer = new ol.layer.Vector({
       id: 'runways'
       source: runwaysSource
       style: (feat, resolution) ->
-        runway = feat.getProperties()
-        #console.log(runway)
-        [styles.runways.predef]
+        [runwayStyle(feat).predef.zoom_0]
     })
 
     view = new ol.View({
@@ -177,26 +224,41 @@ $ ->
       maxZoom: 20
     })
 
-    hoverAirportInteraction = new ol.interaction.Select({
+    featRadius = (resolution) ->
+      console.log('zoom')
+      zoom = view.getZoom()
+      console.log(zoom)
+
+      (feat) ->
+        styleDef = featFold(feat)(
+          (a) -> styleDefs.airports[airportStyleKey(feat)].predef.zoom_0,
+          (r) -> stylesDef.runways[runwayStyleKey(feat)].predef.zoom_0
+        )
+        original = styleDef.radius
+      
+
+    view.on('change:resolution', (event) ->
+      console.log('change res')
+      #r = featRadius(event.target.get(event.key))
+    )
+
+    interactiveLayers = (layer) ->
+      layerId = layer.get('id')
+      layerId == 'airports' or layerId == 'runways'
+
+    selectInteraction = new ol.interaction.Select({
+      layers: interactiveLayers
+      style: (feat, resolution) ->
+        condition: ol.events.condition.pointerMove
+        [featStyle(feat).selected.zoom_0]
+    })
+
+    hoverInteraction = new ol.interaction.Select({
       condition: ol.events.condition.pointerMove
-      layers: (layer) -> layer.get('id') == 'airports'
-      style: [styles.airports.highlight]
-    })
-
-    selectAirportInteraction = new ol.interaction.Select({
-      layers: (layer) -> layer.get('id') == 'airports'
-      style: [styles.airports.selected]
-    })
-
-    hoverRunwayInteraction = new ol.interaction.Select({
-      condition: ol.events.condition.pointerMove
-      layers: (layer) -> layer.get('id') == 'runways'
-      style: [styles.runways.highlight]
-    })
-
-    selectRunwayInteraction = new ol.interaction.Select({
-      layers: (layer) -> layer.get('id') == 'runways'
-      style: [styles.runways.selected]
+      layers: interactiveLayers
+      style: (feat, resolution) ->
+        console.log(resolution)
+        [featStyle(feat).highlight.zoom_0]
     })
 
     popup = new ol.Overlay({
@@ -213,10 +275,8 @@ $ ->
     map.setView(view)
 
     map.getInteractions().extend([
-      hoverRunwayInteraction
-      hoverAirportInteraction
-      selectRunwayInteraction
-      selectAirportInteraction
+      hoverInteraction
+      selectInteraction
     ])
 
     showPopup = (content) -> (feat, coords) ->
@@ -242,27 +302,27 @@ $ ->
         when 'closed'         then 'default'
         else 'default'
 
-    classForRunway = (runway) ->
-      if runway.closed
-        'danger'
-      else
-        if runway.lighted
-          'success'
-        else
-          'warning'
-
-
+    #classForRunway = (runway) ->
+      #if runway.closed
+        #'danger'
+      #else
+        #if runway.lighted
+          #'success'
+        #else
+          #'warning'
 
     ### TODO: move this big chunk to somewhere else ###
     airportContent = (feat, coords) ->
       a = feat.getProperties()
       position = ol.coordinate.toStringHDMS(coords)
       strong = (value) -> fold(value)('?')((v) -> "<strong>#{v}</strong>")
-      codeClass = "pull-right LABEL LAbel-#{classForAirportType(a.airportType)}"
       elevation = fold(a.elevation)('?')((v) -> "<strong>#{v}</strong> (ft)")
       """
         <ul class="list-group box-shadow">
-          <li class="list-group-item list-group-item-info"><strong>#{a.name}</strong> <span class="#{codeClass}">#{a.ident}</span></li>
+          <li class="list-group-item list-group-item-info">
+            <span class="feature-name">#{airplane} #{a.name}</span>
+            <span class="feature-code pull-right label label-default">#{a.ident}</span>
+          </li>
           <li class="list-group-item">Type: <strong>#{a.airportType}</strong></li>
           <li class="list-group-item">Region: #{strong(a.isoRegion)}</li>
           <li class="list-group-item">Municipality: #{strong(a.municipality)}</li>
@@ -284,25 +344,18 @@ $ ->
     #showRunwayPopup = showPopup(runwayContent)
 
     hideHoverInfo = () ->
-      mapHoverCode.empty()
-      mapHoverCode.attr('class', 'pull-right label hidden')
-      mapHoverInfo.empty()
+      mapHoverCode.html('&nbsp;')
+      mapHoverCode.attr('class', 'pull-right label label-default')
+      mapHoverInfo.html('&nbsp;')
 
-    showAiportHoverInfo = (feat) ->
-      a = feat.getProperties()
-      typeClass = "label-#{classForAirportType(a.airportType)}"
-      mapHoverCode.removeClass('hidden')
-      mapHoverCode.addClass(typeClass)
-      mapHoverCode.html("""#{a.ident}""")
-      mapHoverInfo.html("""#{a.name}""")
+    showAiportHoverInfo = (data) ->
+      mapHoverCode.html("""#{data.ident}""")
+      mapHoverInfo.html("""#{data.name}""")
 
-    showRunwayHoverInfo = (feat) ->
-      r = feat.getProperties()
-      typeClass = "label-#{classForRunway(r)}"
+    showRunwayHoverInfo = (data) ->
       mapHoverCode.removeClass('hidden')
-      #mapHoverCode.addClass(typeClass)
-      mapHoverCode.html("""#{renderBoolean(r.lighted)} #{renderBoolean(! r.closed)}""")
-      mapHoverInfo.html("""#{r.leIdent} #{r.surface}""")
+      mapHoverCode.html("""#{renderBoolean(data.lighted)} #{renderBoolean(! data.closed)}""")
+      mapHoverInfo.html("""#{data.leIdent} #{data.surface}""")
 
     panTo = (location) ->
       pan = ol.animation.pan({
@@ -311,52 +364,49 @@ $ ->
       map.beforeRender(pan)
       view.setCenter(location)
 
-    selectedAirport = selectAirportInteraction.getFeatures()
-    selectedAirport.on('add', (event) ->
+    selected = selectInteraction.getFeatures()
+    selected.on('add', (event) ->
       feat = event.target.item(0)
       coords = feat.getGeometry().getCoordinates()
-      showAirportPopup(feat, coords)
+      data = feat.getProperties()
       panTo(coords)
-      airport = feat.getProperties()
-      if noNotify == false
-        for cb in airportCallbacks
-          cb(airport)
+      switch (data.type)
+        when 'airport'
+          showAirportPopup(feat, coords)
+          if noNotify == false
+            for cb in airportCallbacks
+              cb(data)
+        when 'runway'
+          #showRunwayPopup(feat, coords)
+          if noNotify == false
+            for cb in runwayCallbacks
+              cb(data)
     )
-    selectedAirport.on('remove', (event) ->
+    selected.on('remove', (event) ->
       element = $(popup.getElement())
       element.popover('destroy')
     )
 
-    selectAirport = (id) ->
-      selectedAirport.clear()
-      feat = airportsSource.getFeatureById(id)
+    select = (type) -> (id) ->
+      selected.clear()
+      feat = switch (type)
+        when 'airport' then airportsSource.getFeatureById(id)
+        when 'runway' then runwaysSource.getFeatureById(id)
       noNotify = true
-      selectedAirport.push(feat)
+      selected.push(feat)
       noNotify = false
 
-    highlightedAirport = hoverAirportInteraction.getFeatures()
-    highlightedAirport.on('add', (event) ->
+    highlighted = hoverInteraction.getFeatures()
+    highlighted.on('add', (event) ->
       feat = event.target.item(0)
-      showAiportHoverInfo(feat)
+      data = feat.getProperties()
+      dataType = feat.get('type')
+      switch (data.type)
+        when 'airport' then showAiportHoverInfo(data)
+        when 'runway'  then showRunwayHoverInfo(data)
     )
-    highlightedAirport.on('remove', hideHoverInfo)
+    highlighted.on('remove', hideHoverInfo)
       
-
-    selectedRunway = selectRunwayInteraction.getFeatures()
-    selectedRunway.on('add', (event) ->
-      feat = event.target.item(0)
-      runway = feat.getProperties()
-      if noNotify == false
-        for cb in runwayCallbacks
-          cb(runway)
-    )
-    highlightedRunway = hoverRunwayInteraction.getFeatures()
-    highlightedRunway.on('add', (event) ->
-      feat = event.target.item(0)
-      showRunwayHoverInfo(feat)
-    )
-    highlightedRunway.on('remove', hideHoverInfo)
-
     registerAirportCallback = (cb) ->
       airportCallbacks.push(cb)
 
@@ -400,7 +450,8 @@ $ ->
       updateRunways: updateRunways
       onAirportSelected: registerAirportCallback
       onRunwaySelected: registerRunwayCallback
-      selectAirport: selectAirport
+      selectAirport: select('airport')
+      selectRunway: select('runway')
     }
 
 
@@ -478,6 +529,7 @@ $ ->
     )
 
     update = (data) ->
+      dataTable.clear()
       dataTable.rows.add(data).draw(true)
 
     search = (query) ->
@@ -519,7 +571,7 @@ $ ->
     })
 
     $.extend(tableResults, {
-      selectAirport: (id) -> tableResults.select(idFn(id))
+      selectAirport: (airport) -> tableResults.select(idFn(airport))
     })
 
 
@@ -544,11 +596,13 @@ $ ->
         { data: 'closed', render: (b) -> renderBoolean(! b) }
         { data: 'leHeading' }
         { data: 'leElevation' }
-        { data: 'airportRef', visible: false }
       ]
     })
+    selectRunway = (runway) ->
+      tableResults.select(idFn(runway))
+
     $.extend(tableResults, {
-      selectRunway: (id) -> tableResults.select(idFn(id))
+      selectRunway: selectRunway
     })
 
 
@@ -613,7 +667,6 @@ $ ->
             query: queryStr
           }))
 
-    # bind on queryForm submit event
     setup = (countries) ->
       selector = queryInput.selectize({
         maxItems: 1
@@ -625,7 +678,6 @@ $ ->
         persist: false
       })
       selector = selector[0].selectize
-      #selector.change(() ->
       selector.on('change', () ->
         sendQuery(queryInput.val())
       )
@@ -666,8 +718,18 @@ $ ->
         "#{pre} #{airport.isoRegion} (type: #{airport.airportType})"
 
       logger.info(
-        """&uarr; [#{airport.ident}] #{airport.name} #{extraInfo()}"""
+        """#{airplane} [#{airport.ident}] #{airport.name} #{extraInfo()}"""
       )
+
+    logRunwaySelected = (runway) ->
+      length = fold(runway.length)('')((l) -> ", length: #{l}")
+      width = fold(runway.width)('')((w) -> ", width: #{w}")
+      lighted = ", lighted: #{renderBoolean(runway.lighted)}"
+      open = ", open: #{renderBoolean(! runway.open)}"
+
+      logger.info("""
+        #{upArrow} [#{runway.leIdent}] #{runway.surface}#{length}#{width}#{lighted}#{open}
+      """)
 
     airportsResults.onSelectRow((airport) ->
       logAirportSelected(airport)
@@ -681,10 +743,13 @@ $ ->
       runwaysResults.search(airport.id)
     )
 
+    runwaysResults.onSelectRow((runway) ->
+      logRunwaySelected(runway)
+      map.selectRunway(runway.id)
+    )
+
     map.onRunwaySelected((runway) ->
-      logger.info(
-        """&uarr; [#{runway.leIdent}]"""
-      )
+      runwaysResults.selectRunway(runway)
     )
 
     refreshCountryResults = (countries) ->
@@ -734,11 +799,11 @@ $ ->
           logger.warn("unknown message: #{data}")
 
 
-    logger.info("Connecting to #{wsconfig.wsuri}…")
+    logger.debug("Connecting to #{wsconfig.wsuri}…")
     socket = new WebSocket(wsuri)
 
     socket.onopen = (event) ->
-      logger.info("Connected!")
+      logger.debug("Connected!")
 
       socket.onmessage = receive
       query = Query({

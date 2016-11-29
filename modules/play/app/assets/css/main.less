@@ -15,21 +15,33 @@
 }
 
 #query-log-area {
-  background-color: @gray-darker
+  background-color: @gray-dark
 }
 
-#map-hover-container {
-  width: 400px;
-  border-radius: 8px;
-}
-#map-hover-info {
-  font-weight: bold;
+.feature-name {
   width: 300px;
   display: inline-block;
+  text-overflow: ellispis;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.feature-code {
+  width: 60px;
+  display: inline-block;
+}
+
+
+#map-hover-container {
+  border-radius: 5px;
+}
+#map-hover-info {
+  line-height: 20px;
+  text-align: left;
 }
 #map-hover-code {
   width: 60px;
   display: inline-block;
+  line-height: 20px;
 }
 
 .popover {
@@ -42,7 +54,7 @@
 }
 
 .popover-content {
-  min-width: 360px;
+  min-width: 420px;
   background-color: transparent;
 }
 
