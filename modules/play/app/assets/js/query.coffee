@@ -438,13 +438,20 @@ $ ->
     update = (data) ->
       dataTable.rows.add(data).draw(true)
 
+    search = (query) ->
+      dataTable.search(query).draw(true)
+
     {
       update: update
       selectedData: getSelectedData
       onSelectRow:  (cb) -> selectCallbacks.push(cb)
       onUnselectRow: (cb) -> unselectCallbacks.push(cb)
+      search: search
       select: select
-      unselect: unselect
+      unselect: () ->
+        noNotify = true
+        unselect
+        noNotify = false
     }
 
 
@@ -485,6 +492,7 @@ $ ->
       height: '22vh'
       rowId: idFn
       columns: [
+        { data: 'airportRef' }
         { data: 'id' }
         { data: 'leIdent' }
         { data: 'surface' }
@@ -622,11 +630,13 @@ $ ->
     airportsResults.onSelectRow((airport) ->
       logAirportSelected(airport)
       map.selectAirport(airport.id)
+      runwaysResults.search(airport.id)
     )
 
     map.onAirportSelected((airport) ->
       logAirportSelected(airport)
       airportsResults.selectAirport(airport)
+      runwaysResults.search(airport.id)
     )
 
     map.onRunwaySelected((runway) ->
