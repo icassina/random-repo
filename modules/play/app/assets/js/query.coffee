@@ -82,6 +82,7 @@ $ ->
   ### Map ###
   ###########
   MyMap = (config) ->
+    noNotify = false
     airportCallbacks = []
     runwayCallbacks = []
 
@@ -312,8 +313,9 @@ $ ->
       showAirportPopup(feat, coords)
       panTo(coords)
       airport = feat.getProperties()
-      for cb in airportCallbacks
-        cb(airport)
+      if noNotify == false
+        for cb in airportCallbacks
+          cb(airport)
     )
     selectedAirport.on('remove', (event) ->
       element = $(popup.getElement())
@@ -323,14 +325,17 @@ $ ->
     selectAirport = (id) ->
       selectedAirport.clear()
       feat = airportsSource.getFeatureById(id)
+      noNotify = true
       selectedAirport.push(feat)
+      noNotify = false
 
     selectedRunway = selectRunwayInteraction.getFeatures()
     selectedRunway.on('add', (event) ->
       feat = event.target.item(0)
       runway = feat.getProperties()
-      for cb in runwayCallbacks
-        cb(runway)
+      if noNotify == false
+        for cb in runwayCallbacks
+          cb(runway)
     )
 
     registerAirportCallback = (cb) ->
@@ -367,49 +372,68 @@ $ ->
     rowId = config.rowId
     columns = config.columns
 
+    noNotify = false
+    selectCallbacks = []
+    unselectCallbacks = []
+
     dataTable = $("##{target}").DataTable({
       scrollY:          height
       sScrollY:         height
       bScrollCollapse:  false
       scrollCollapse:   false
       paging:           false
+      scroller:         true
       rowId:            rowId
       columns:          columns
     })
-
-    selectCallbacks = []
-    unselectCallbacks = []
 
     getSelectedData = () ->
       idx = dataTable.row('.selected').index()
       data = dataTable.row(idx).data()
       data
 
+    notifySelected = (data) ->
+      if noNotify == false
+        for cb in selectCallbacks
+          cb(data)
+
+    notifyUnselected = (data) ->
+      if noNotify == false
+        for cb in unselectCallbacks
+          cb(data)
+
+    unselect = () ->
+      dataTable.$('tr.selected').each(() ->
+        self = $(this)
+        data = getSelectedData()
+        self.removeClass('selected active')
+        notifyUnselected(data)
+      )
+
+    select = (id) ->
+      noNotify = true
+      unselect()
+      row = dataTable.row("##{id}")
+      data = row.data()
+      $("##{id}").addClass('selected active')
+      $('.dataTables_scrollBody').scrollTo("##{id}")
+      data = dataTable.row("##{id}").data()
+      noNotify = false
 
     $("##{config.target} tbody").on('click', 'tr', () ->
       elem = $(this)
       if elem.hasClass('selected')
+        # already selected -> unselect
         data = getSelectedData()
         elem.removeClass('selected active')
-
-        for cb in unselectCallbacks
-          cb(data)
+        notifyUnselected(data)
       else
-        dataTable.$('tr.selected').each(() ->
-          self = $(this)
-          data = getSelectedData()
-          self.removeClass('selected active')
-          for cb in unselectCallbacks
-            cb(data)
-        )
+        # not the same row -> unselect other, then select this
+        unselect()
         elem.addClass('selected active')
         data = getSelectedData()
-        for cb in selectCallbacks
-          cb(data)
+        notifySelected(data)
     )
-
-    select = (id) ->
-      
 
     update = (data) ->
       dataTable.rows.add(data).draw(true)
@@ -419,7 +443,8 @@ $ ->
       selectedData: getSelectedData
       onSelectRow:  (cb) -> selectCallbacks.push(cb)
       onUnselectRow: (cb) -> unselectCallbacks.push(cb)
-      select: (id) ->
+      select: select
+      unselect: unselect
     }
 
 
@@ -427,12 +452,13 @@ $ ->
   ### Airports Results ###
   ########################
   AirportsResults = (config) ->
-    TableResults({
+    idFn = (data) -> "airport_id_#{data.id}"
+    tableResults = TableResults({
       logger: config.logger
       target: 'airports-results-table'
       height: '33vh'
       select: true
-      rowId: (id) -> "airport_id_#{id}"
+      rowId: idFn
       columns: [
         { data: 'id' }
         { data: 'ident' }
@@ -443,17 +469,21 @@ $ ->
       ]
     })
 
+    $.extend(tableResults, {
+      selectAirport: (id) -> tableResults.select(idFn(id))
+    })
+
 
 ##############################################################################
   ### Runways Results ###
   #######################
   RunwaysResults = (config) ->
-
-    TableResults({
+    idFn = (data) -> "runway_id_#{data.id}"
+    tableResults = TableResults({
       logger: config.logger
       target: 'runways-results-table'
       height: '22vh'
-      rowId: (id) -> "runway_id_#{id}"
+      rowId: idFn
       columns: [
         { data: 'id' }
         { data: 'leIdent' }
@@ -466,6 +496,9 @@ $ ->
         { data: 'leElevation' }
         { data: 'airportRef', visible: false }
       ]
+    })
+    $.extend(tableResults, {
+      selectRunway: (id) -> tableResults.select(idFn(id))
     })
 
 
@@ -577,11 +610,7 @@ $ ->
     runwaysResults = RunwaysResults({logger: logger})
     countriesResults = CountriesResults({logger: logger})
 
-    airportsResults.onSelectRow((data) ->
-      map.selectAirport(data.id)
-    )
-
-    map.onAirportSelected((airport) ->
+    logAirportSelected = (airport) ->
       extraInfo = ->
         pre = if airport.municipality? then "in #{airport.municipality}" else "in"
         "#{pre} #{airport.isoRegion} (type: #{airport.airportType})"
@@ -589,7 +618,15 @@ $ ->
       logger.info(
         """&uarr; [#{airport.ident}] #{airport.name} #{extraInfo()}"""
       )
-      airportsResults.select(airport.id)
+
+    airportsResults.onSelectRow((airport) ->
+      logAirportSelected(airport)
+      map.selectAirport(airport.id)
+    )
+
+    map.onAirportSelected((airport) ->
+      logAirportSelected(airport)
+      airportsResults.selectAirport(airport)
     )
 
     map.onRunwaySelected((runway) ->
