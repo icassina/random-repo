@@ -86,6 +86,7 @@ $ ->
     airportCallbacks = []
     runwayCallbacks = []
 
+    # TODO: finish styles (airportType, runways(length/width, light, open)
     styles = {
       airports: {
         predef: new ol.style.Style({
@@ -94,6 +95,7 @@ $ ->
             stroke: new ol.style.Stroke({color: 'rgba(10,  30,  10,  0.75)', width: 2})
             radius: 8
           })
+          zIndex: 1
         })
         small: new ol.style.Style({
           image: new ol.style.Circle({
@@ -101,6 +103,7 @@ $ ->
             stroke: new ol.style.Stroke({color: 'rgba(10,  30,  10,  0.75)', width: 2})
             radius: 4
           })
+          zIndex: 2
         })
         medium: new ol.style.Style({
           image: new ol.style.Circle({
@@ -108,6 +111,7 @@ $ ->
             stroke: new ol.style.Stroke({color: 'rgba(10,  30,  10,  0.75)', width: 2})
             radius: 6
           })
+          zIndex: 2
         })
         large: new ol.style.Style({
           image: new ol.style.Circle({
@@ -115,6 +119,7 @@ $ ->
             stroke: new ol.style.Stroke({color: 'rgba(10,  30,  10,  0.75)', width: 2})
             radius: 15
           })
+          zIndex: 2
         })
         highlight: new ol.style.Style({
           image: new ol.style.Circle({
@@ -122,7 +127,7 @@ $ ->
             stroke: new ol.style.Stroke({color: 'rgba(0,   180, 0,   0.75)', width: 2})
             radius: 12
           })
-          zIndex: 1
+          zIndex: 3
         })
         selected: new ol.style.Style({
           image: new ol.style.Circle({
@@ -130,47 +135,38 @@ $ ->
             stroke: new ol.style.Stroke({color: 'rgba(180, 90,  0,   0.8)', width: 2})
             radius: 12
           })
-          zIndex: 2
+          zIndex: 4
         })
       }
       runways: {
         predef: new ol.style.Style({
-          image: new ol.style.Circle({
-            fill: new ol.style.Fill({
-              color: 'rgba(127, 127, 255, 0.5)'
-            })
-            stroke: new ol.style.Stroke({
-              color: 'rgba(20, 20, 180, 0.75)'
-              width: 2
-            })
+          image: new ol.style.RegularShape({
+            fill: new ol.style.Fill(    {color: 'rgba(127, 127, 255, 0.5)'})
+            stroke: new ol.style.Stroke({color: 'rgba(20, 20, 180, 0.75)', width: 2})
+            points: 4
             radius: 8
+            angle: Math.PI / 4
           })
         })
         highlight: new ol.style.Style({
-          image: new ol.style.Circle({
-            fill: new ol.style.Fill({
-              color: 'rgba(90, 90, 255, 0.75)'
-            })
-            stroke: new ol.style.Stroke({
-              color: 'rgba(0, 0, 180, 0.75)'
-              width: 2
-            })
+          image: new ol.style.RegularShape({
+            fill: new ol.style.Fill(    {color: 'rgba(90, 90, 255, 0.75)'})
+            stroke: new ol.style.Stroke({color: 'rgba(0, 0, 180, 0.75)', width: 2})
+            points: 4
             radius: 12
+            angle: Math.Pi / 4
           })
-          zIndex: 1
+          zIndex: 3
         })
         selected: new ol.style.Style({
-          image: new ol.style.Circle({
-            fill: new ol.style.Fill({
-              color: 'rgba(25, 255, 180, 0.8)'
-            })
-            stroke: new ol.style.Stroke({
-              color: 'rgba(0, 180, 90, 0.8)'
-              width: 2
-            })
+          image: new ol.style.RegularShape({
+            fill: new ol.style.Fill(    {color: 'rgba(25, 255, 180, 0.8)'})
+            stroke: new ol.style.Stroke({color: 'rgba(0, 180, 90, 0.8)', width: 2})
+            points: 4
             radius: 12
+            angle: Math.PI / 4
           })
-          zIndex: 2
+          zIndex: 4
         })
       }
     }
@@ -197,13 +193,16 @@ $ ->
         switch(airport.airportType)
           when 'small_airport' then styles.airports.small
           when 'medium_airport' then styles.airports.medium
+          when 'large_airport' then styles.airports.large
           else styles.airports.predef
     })
 
     runwaysLayer = new ol.layer.Vector({
       id: 'runways'
       source: runwaysSource
-      style: styles.runways.predef
+      style: (feat, resolution) ->
+        #runway = feat.getProperties()
+        styles.runway.predef
     })
 
     view = new ol.View({
@@ -349,9 +348,30 @@ $ ->
       airportsSource.addFeatures(geoJSON.readFeatures(airportsFeatures))
       map.getView().fit(airportsSource.getExtent(), map.getSize())
 
-    updateRunways = (runwaysFeatures) ->
+    updateRunways = (runways) ->
+      features = {
+        type: 'FeatureCollection'
+        crs: {
+          type: 'name'
+          properties: {
+            name: 'EPSG:4326'
+          }
+        }
+        features: runways.filter((r) -> r.lePosition? or r.hePosition).map((r) ->
+          coords = if r.lePosition? then r.lePosition else r.hePosition
+          {
+            id:     r.id
+            type:   'Feature'
+            geometry: {
+              type:         'Point'
+              coordinates:  coords
+            }
+            properties: r
+          }
+        )
+      }
       runwaysSource.clear()
-      runwaysSource.addFeatures(geoJSON.readFeatures(runwaysFeatures))
+      runwaysSource.addFeatures(geoJSON.readFeatures(features))
 
     {
       updateAirports: updateAirports
@@ -654,7 +674,7 @@ $ ->
 
     refreshRunwaysResults = (runways) ->
       runwaysResults.update(runways)
-      #map.updateRunways(runways)
+      map.updateRunways(runways)
       
 
     # receive function
