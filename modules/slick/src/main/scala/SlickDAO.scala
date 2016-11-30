@@ -28,8 +28,8 @@ class SlickDAO @Inject()(db: Database) extends DAO with Tables {
   def country(countryCode: String)(implicit ec: DAOExecutionContext): Future[Option[Country]] =
     db.run(Countries.filter(_.code === countryCode).result.headOption)
 
-  def countries(implicit ec: DAOExecutionContext): Future[Seq[Country]] =
-    db.run(Countries.result)
+  def countries(implicit ec: DAOExecutionContext): Future[Seq[CountryDef]] =
+    db.run(Countries.result.map(_.map(c => CountryDef(c.code, c.name, c.keywords))))
 
   def airportsByCountry(countryCode: String)(implicit ec: DAOExecutionContext): Future[Option[AirportsByCountry]] =
     db.run {

@@ -21,6 +21,10 @@ class API @Inject() (dao: DAO, daoEC: DAOExecutionContext) extends Controller {
     dao.stats.map(stats => Ok(Json.toJson(stats)))
   }
 
+  def countries = Action.async {
+    dao.countries.map(countries => Ok(Json.toJson(countries)))
+  }
+
   def country(countryCode: String) = Action.async {
     dao.country(countryCode).map(country =>
       country.fold[Result](NotFound)(country => Ok(Json.toJson(country)))

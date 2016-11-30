@@ -43,7 +43,7 @@ object WSActor {
     case object NoMatches                                             extends Response with CountryQueryResp
     case class SendAirports(airports: AirportsByCountry)              extends Response with CountryQueryResp
     case class SendRunways(runways: RunwaysByCountry)                 extends Response with CountryQueryResp
-    case class SendCountries(countries: Seq[Country])                 extends Response with CountriesListResp
+    case class SendCountries(countries: Seq[CountryDef])              extends Response with CountriesListResp
 
     sealed trait Error extends Response
     object Error {

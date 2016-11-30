@@ -23,6 +23,13 @@ object Messages {
       "type"            -> "country"
     )
   }
+  implicit val countryDefWrite: Writes[CountryDef] = Writes[CountryDef] { d =>
+    Json.obj(
+      "code"      -> d.code,
+      "name"      -> d.name,
+      "keywords"  -> d.keywords
+    )
+  }
 
   implicit val airportWrite: Writes[Airport] = Writes[Airport] { d =>
     Json.obj(

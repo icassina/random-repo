@@ -1,11 +1,12 @@
 $ ->
 
-  countriesBaseUrl = '/api/country'
+  countriesUrl    = '/api/countries'
+  countryBaseUrl  = '/api/country'
   airportsBaseUrl = '/api/airports'
-  runwaysBaseUrl = '/api/runways'
+  runwaysBaseUrl  = '/api/runways'
 
   countryUrl = (countryCode) ->
-    "#{countriesBaseUrl}/#{countryCode}"
+    "#{countryBaseUrl}/#{countryCode}"
 
   airportsUrl = (countryCode, suffix) ->
     extra = if suffix? then "/#{suffix}" else ""
@@ -69,7 +70,9 @@ $ ->
       pre = if airport.municipality? then "in #{airport.municipality}" else "in"
       "#{pre} #{airport.isoRegion} (#{airport.airportType})"
 
-    """#{sym.airplane} ##{airport.id} [#{airport.ident}] #{airport.name} #{extraInfo()}"""
+    """
+      #{sym.airplane} ##{airport.id} [#{airport.ident}] #{airport.name} #{extraInfo()}
+    """
 
   runwayLogLine = (runway) ->
     length = fold(runway.length)('')((l) -> ", length: #{l}")
@@ -79,6 +82,11 @@ $ ->
 
     """
       #{sym.upArrow} ##{runway.id} [#{runway.leIdent} | #{runway.heIdent}] #{runway.surface}#{length}#{width}#{open}#{lighted}
+    """
+
+  countryLogLine = (country) ->
+    """
+      #{country.name} [#{country.code}/#{country.continent}]
     """
 
 ##############################################################################
@@ -117,14 +125,23 @@ $ ->
       logLines = []
       logArea.empty()
 
+    _out  = (url) ->
+      _log('out')("#{sym.rArrow} GET #{url}")
+
+    _in   = (url) ->
+      _log('in') ("#{sym.lArrow} GET #{url}")
+
+    _err  = (url, status, error) ->
+      _log('err') ("#{sym.lArrow} GET #{url}: Error: #{status} #{error}")
+
     {
       trace:  _log('trace')
       debug:  _log('debug')
       info:   _log('info')
-      out:    _log('out')
-      in:     _log('in')
       warn:   _log('warn')
-      err:    _log('err')
+      out:    _out
+      in:     _in
+      err:    _err
       clear:  clear
     }
 
@@ -151,22 +168,22 @@ $ ->
     }
 
 
-    mkStyle = (e) -> (type) ->
-      switch(type)
+    mkStyle = (e) -> (kind) -> (scale) ->
+      switch(kind)
           when 'highlight'
             fill    = new ol.style.Fill({color: mkColor(0.2)(e.color)})
             stroke  = new ol.style.Stroke({color: mkColor(0.9)(e.color), width: 4})
-            shape = mkShape[e.shape]({fill: fill, stroke: stroke, radius: (1.8 * e.radius)})
+            shape = mkShape[e.shape]({fill: fill, stroke: stroke, radius: (scale * (1.8 * e.radius))})
             new ol.style.Style({image: shape, zIndex: (e.index+40)})
           when 'selected'
             fill    = new ol.style.Fill({color: mkColor(0.8)(e.color)})
             stroke  = new ol.style.Stroke({color: mkColor(1.0)(e.color), width: 4})
-            shape = mkShape[e.shape]({fill: fill, stroke: stroke, radius: (1.4 * e.radius)})
+            shape = mkShape[e.shape]({fill: fill, stroke: stroke, radius: (scale * (1.4 * e.radius))})
             new ol.style.Style({image: shape, zIndex: (e.index+20)})
           else
             fill    = new ol.style.Fill({color: mkColor(0.6)(e.color)})
             stroke  = new ol.style.Stroke({color: mkColor(0.8)(e.color), width: 2})
-            shape = mkShape[e.shape]({fill: fill, stroke: stroke, radius: e.radius})
+            shape = mkShape[e.shape]({fill: fill, stroke: stroke, radius: (scale * e.radius)})
             new ol.style.Style({image: shape, zIndex: e.index})
 
     buildStyles = (stylesDef) ->
@@ -175,9 +192,12 @@ $ ->
         result[section] = {}
         for subsection, entry of entries
           result[section][subsection] = {
-            predef:     { zoom_0: mkStyle(entry)('predef') }
-            highlight:  { zoom_0: mkStyle(entry)('highlight') }
-            selected:   { zoom_0: mkStyle(entry)('selected') }
+            predef: {}
+            highlight: {}
+            selected: {}
+            #predef:     { zoom_0: mkStyle(entry)('predef')(1.0) }
+            #highlight:  { zoom_0: mkStyle(entry)('highlight')(1.0) }
+            #selected:   { zoom_0: mkStyle(entry)('selected')(1.0) }
           }
 
       result
@@ -214,17 +234,35 @@ $ ->
 
     styles = buildStyles(stylesDef)
 
+    airportStyle = (feat) ->
+      styles.airports[airportStyleKey(feat)]
+
     runwayStyle = (feat) ->
       styles.runways[runwayStyleKey(feat)]
 
-    airportStyle = (feat) ->
-      styles.airports[airportStyleKey(feat)]
+    airportStyleDef = (feat) ->
+      stylesDef.airports[airportStyleKey(feat)]
+
+    runwayStyleDef = (feat) ->
+      stylesDef.runways[runwayStyleKey(feat)]
 
     featStyle = (feat) ->
       featFold(feat)(
         (a) -> airportStyle(feat),
         (r) -> runwayStyle(feat)
       )
+
+    featStyleDef = (feat) ->
+      featFold(feat)(
+        (a) -> airportStyleDef(feat),
+        (r) -> runwayStyleDef(feat)
+      )
+
+    newStyleKind = (kind) ->
+      (styleDef) -> (zoom) -> mkStyle(styleDef)(kind)(zoom / 10.0)
+
+    styleBaseKind = (kind) ->
+      (feat) -> featStyle(feat)[kind]
 
     osmTiles = new ol.layer.Tile({
       source: new ol.source.OSM()
@@ -240,28 +278,6 @@ $ ->
       format: geoJSON
     })
 
-    # TODO: change radius according to zoom level
-    airportsLayer = new ol.layer.Vector({
-      id: 'airports'
-      source: airportsSource
-      style: (feat, resolution) ->
-        [airportStyle(feat).predef.zoom_0]
-        #zoomKey = "zoom_#{zoom}"
-        #styleBase = airportStyle(feat).predef
-        #if zoomKey of styleBase
-          #[styleBase[zoomKey]]
-        #else
-          #original = styleBase["zoom_0"]
-
-    })
-
-    runwaysLayer = new ol.layer.Vector({
-      id: 'runways'
-      source: runwaysSource
-      style: (feat, resolution) ->
-        [runwayStyle(feat).predef.zoom_0]
-    })
-
     view = new ol.View({
       projection: 'EPSG:4326'
       center: [5.37437083333, 52.14307022093594] # center of NL airports extent
@@ -270,23 +286,47 @@ $ ->
       maxZoom: 20
     })
 
-    featRadius = (resolution) ->
-      console.log('zoom')
-      zoom = view.getZoom()
-      console.log(zoom)
+    styleFunction = (styleBase, styleDef, newStyle) ->
+      (feat, resolution) ->
+        zoom = view.getZoom()
+        zoomKey = "zoom_#{zoom}"
+        base = styleBase(feat)
+        if not (zoomKey of base)
+          def = styleDef(feat)
+          base[zoomKey] = newStyle(def)(zoom)
 
-      (feat) ->
-        styleDef = featFold(feat)(
-          (a) -> styleDefs.airports[airportStyleKey(feat)].predef.zoom_0,
-          (r) -> stylesDef.runways[runwayStyleKey(feat)].predef.zoom_0
-        )
-        original = styleDef.radius
-      
+        [base[zoomKey]]
 
-    view.on('change:resolution', (event) ->
-      console.log('change res')
-      #r = featRadius(event.target.get(event.key))
-    )
+    styleFunctionPredef = (type) ->
+      styleBase = switch(type)
+        when 'airport' then (feat) -> airportStyle(feat).predef
+        when 'runway'  then (feat) -> runwayStyle(feat).predef
+      styleDef = switch (type)
+        when 'airport' then (feat) -> airportStyleDef(feat)
+        when 'runway'  then (feat) -> runwayStyleDef(feat)
+      newStyle = newStyleKind('predef')
+
+      styleFunction(styleBase, styleDef, newStyle)
+
+    styleFunctionKind = (kind) ->
+      styleFunction(
+        (feat) -> featStyle(feat)[kind],
+        featStyleDef,
+        newStyleKind(kind)
+      )
+
+    # TODO: change radius according to zoom level
+    airportsLayer = new ol.layer.Vector({
+      id: 'airports'
+      source: airportsSource
+      style: styleFunctionPredef('airport')
+    })
+
+    runwaysLayer = new ol.layer.Vector({
+      id: 'runways'
+      source: runwaysSource
+      style: styleFunctionPredef('runway')
+    })
 
     interactiveLayers = (layer) ->
       layerId = layer.get('id')
@@ -294,25 +334,23 @@ $ ->
 
     selectInteraction = new ol.interaction.Select({
       layers: interactiveLayers
-      style: (feat, resolution) ->
-        condition: ol.events.condition.pointerMove
-        [featStyle(feat).selected.zoom_0]
+      style: styleFunctionKind('selected')
     })
 
     hoverInteraction = new ol.interaction.Select({
       condition: ol.events.condition.pointerMove
       layers: interactiveLayers
-      style: (feat, resolution) ->
-        console.log(resolution)
-        [featStyle(feat).highlight.zoom_0]
+      style: styleFunctionKind('highlight')
     })
 
     popup = new ol.Overlay({
       element: $('#query-info-box')[0]
+      autoPan: false
+      positioning: 'bottom-right'
     })
 
     map = new ol.Map({
-      target: config.mapId
+      target: 'map'
     })
     map.addLayer(osmTiles)
     map.addLayer(airportsLayer)
@@ -330,8 +368,7 @@ $ ->
       element.popover('destroy')
       popup.setPosition(coords)
       element.popover({
-        placement:  'right'
-        animation:  true
+        animation:  false
         html:       true
         content:    content(data, coords)
       })
@@ -446,7 +483,7 @@ $ ->
 
     panTo = (location) -> (cb) ->
       pan = ol.animation.pan({
-        duration: 500
+        duration: 300
         source: view.getCenter()
       })
       map.beforeRender((map, framestate) ->
@@ -462,21 +499,23 @@ $ ->
       feat = event.target.item(0)
       coords = feat.getGeometry().getCoordinates()
       data = feat.getProperties()
-      switch (data.type)
-        when 'airport'
+      featFold(data)(
+        () ->
           panTo(coords)(() -> showAirportPopup(data, coords))
           if noNotify == false
             for cb in airportCallbacks
               cb(data)
-        when 'runway'
+        () ->
           panTo(coords)(() -> showRunwayPopup(data, coords))
           if noNotify == false
             for cb in runwayCallbacks
               cb(data)
+      )
     )
     selected.on('remove', (event) ->
       element = $(popup.getElement())
       element.popover('destroy')
+      popup.setPosition(undefined)
     )
 
     selectFeat = (feat) ->
@@ -490,14 +529,13 @@ $ ->
       if feat?
         selectFeat(feat)
       else
-        logger.warn("#{runwayLogLine(runway)}: runway position not found!")
-        element = $(popup.getElement())
-        element.popover('destroy')
         feat = airportsSource.getFeatureById(runway.airportRef)
         showRunwayPopup(runway, feat.getGeometry().getCoordinates())
 
 
     select = (type) -> (data) ->
+      element = $(popup.getElement())
+      element.popover('destroy')
       feat = switch (type)
         when 'airport' then selectFeat(airportsSource.getFeatureById(data.id))
         when 'runway' then selectRunway(data)
@@ -573,7 +611,6 @@ $ ->
 
     noNotify = false
     selectCallbacks = []
-    unselectCallbacks = []
 
     dataTable = $("##{target}").DataTable({
       scrollY:          height
@@ -596,21 +633,8 @@ $ ->
         for cb in selectCallbacks
           cb(data)
 
-    notifyUnselected = (data) ->
-      if noNotify == false
-        for cb in unselectCallbacks
-          cb(data)
-
     unselect = () ->
-      console.log('unselect')
-      dataTable.$('.selected').each(() ->
-        self = $(this)
-        console.log(self)
-        data = getSelectedData()
-        self.removeClass('selected active')
-        notifyUnselected(data)
-      )
-      dataTable.draw(false)
+      $("##{target} tbody tr.selected").removeClass('selected active')
 
     select = (id) ->
       noNotify = true
@@ -619,16 +643,13 @@ $ ->
       data = row.data()
       $("##{id}").addClass('selected active')
       $('.dataTables_scrollBody').scrollTo("##{id}")
-      data = dataTable.row("##{id}").data()
       noNotify = false
 
     $("##{config.target} tbody").on('click', 'tr', () ->
       elem = $(this)
       if elem.hasClass('selected')
         # already selected -> unselect
-        data = getSelectedData()
         elem.removeClass('selected active')
-        notifyUnselected(data)
       else
         # not the same row -> unselect other, then select this
         unselect()
@@ -651,14 +672,10 @@ $ ->
       update: update
       selectedData: getSelectedData
       onSelectRow:  (cb) -> selectCallbacks.push(cb)
-      onUnselectRow: (cb) -> unselectCallbacks.push(cb)
       search: search
       searchColumn: searchColumn
       select: select
-      unselect: () ->
-        noNotify = true
-        unselect
-        noNotify = false
+      unselect: unselect
     }
 
 
@@ -666,6 +683,8 @@ $ ->
   ### Airports Results ###
   ########################
   AirportsResults = (config) ->
+    titleExtra = $('#airports-results-title-extra')
+
     idFn = (data) -> "airport_id_#{data.id}"
     tableResults = TableResults({
       logger: config.logger
@@ -683,8 +702,16 @@ $ ->
       ]
     })
 
+    updateAirports = (data) ->
+      titleExtra.html("""in #{countryLogLine(data.country)} """)
+      tableResults.update(data.airports)
+
+    selectAirport = (airport) ->
+      tableResults.select(idFn(airport))
+
     $.extend(tableResults, {
-      selectAirport: (airport) -> tableResults.select(idFn(airport))
+      updateAirports: updateAirports
+      selectAirport: selectAirport
     })
 
 
@@ -692,6 +719,8 @@ $ ->
   ### Runways Results ###
   #######################
   RunwaysResults = (config) ->
+    titleExtra = $('#runways-results-title-extra')
+
     idFn = (data) -> "runway_id_#{data.id}"
     tableResults = TableResults({
       logger: config.logger
@@ -714,47 +743,15 @@ $ ->
     selectRunway = (runway) ->
       tableResults.select(idFn(runway))
 
+    updateRunways = (data) ->
+      titleExtra.html("""in #{countryLogLine(data.country)}""")
+      tableResults.update(data.runways)
+
     $.extend(tableResults, {
+      updateRunways: updateRunways
       selectRunway: selectRunway
     })
 
-
-# FIXME
-##############################################################################
-  ### Countries Results ### 
-  #########################
-  CountriesResults = (config) ->
-    logger = config.logger
-
-    selectedCountryNode = $('#airports-results-title-extra')
-
-    countriesColumns = (countries) ->
-      [
-        c.id,
-        c.code,
-        c.name,
-        c.continent,
-        c.wikipediaLink,
-        c.keywords
-      ] for c in countries
-
-    update = (countries) ->
-      switch(countries.length)
-        when 0
-          selectedCountryNode.empty()
-        when 1
-          country = countries[0]
-          selectedCountryNode.html("""
-            in #{country.name} [#{country.code}/#{country.continent}]
-          """)
-        else
-          selectedCountryNode.html("""
-            (query matches #{countries.length} countries)
-          """)
-
-    {
-      update: update
-    }
 
 ##############################################################################
   ### Query ###
@@ -764,8 +761,8 @@ $ ->
     queryInput = $('#query-input')
     querySubmit = $('#query-submit')
     selector = undefined
-
     lastQuery = undefined
+    callbacks = []
 
     logger = config.logger
     refresh = config.refresh
@@ -775,16 +772,17 @@ $ ->
         if queryStr.length >= 2
           lastQuery = queryStr
           url = countryUrl(queryStr)
-          logger.out("#{sym.rArrow} GET #{url}")
+          logger.out(url)
           $.ajax(countryUrl(queryStr), {
             type: 'GET'
 
             error: (jqXHR, status, error) ->
-              logger.err("#{sym.lArrow} GET #{url}: Error: #{status} #{error}")
+              logger.err(url, status, error)
 
             success: (data, status, jqXHR) ->
-              logger.in("#{sym.lArrow} GET #{url}")
-              refresh(data)
+              logger.in(url)
+              for cb in callbacks
+                cb(data)
           })
 
     setup = (countries) ->
@@ -807,160 +805,120 @@ $ ->
 
       queryForm.removeClass('hidden')
       querySubmit.removeClass('hidden')
+      $('.selectize-input').addClass('focus')
+
+      #selector.focus()
+
+    logger.out(countriesUrl)
+    $.ajax(countriesUrl, {
+      type: 'GET'
+
+      error: (jqXHR, status, error) ->
+        logger.err(countriesUrl, status, error)
+
+      success: (data, status, jqXHR) ->
+        logger.in(countriesUrl)
+        setup(data)
+    })
+
+    registerCallback = (cb) ->
+      callbacks.push(cb)
 
     {
-      setup: setup
-      sendQuery: sendQuery
+      onCountryResults: registerCallback
     }
 
 
 ##############################################################################
-  ### Socket Controller ###
-  #########################
-  SocketController = (config) ->
-    wsuri = config.wsuri
+  ### Controller ###
+  ##################
+  Controller = (config) ->
     logger = config.logger
 
-    socket = undefined 
-    query = undefined
+    map               = MyMap(config)
+    query             = Query(config)
+    airportsResults   = AirportsResults(config)
+    runwaysResults    = RunwaysResults(config)
 
-    map = MyMap({
-      mapId: 'map'
-      logger: logger
-    })
-    airportsResults = AirportsResults({logger: logger})
-    runwaysResults = RunwaysResults({logger: logger})
-    countriesResults = CountriesResults({logger: logger})
-
-    airportsResults.onSelectRow((airport) ->
-      logger.info(airportLogLine(airport))
-      map.selectAirport(airport)
-      runwaysResults.unselect()
-      runwaysResults.search(airport.ident)
-    )
-
-    map.onAirportSelected((airport) ->
-      logger.info(airportLogLine(airport))
-      airportsResults.selectAirport(airport)
-      runwaysResults.unselect()
-      runwaysResults.search(airport.ident)
-    )
-
-    runwaysResults.onSelectRow((runway) ->
-      logger.info(runwayLogLine(runway))
-      map.selectRunway(runway)
-      airportsResults.unselect()
-    )
-
-    map.onRunwaySelected((runway) ->
-      logger.info(runwayLogLine(runway))
-      runwaysResults.selectRunway(runway)
-      airportsResults.unselect()
-    )
-
-    refreshAirportsResults = (countryCode) ->
+    fetchAirports = (countryCode) ->
       url = airportsUrl(countryCode, 'geojson')
-      logger.out("#{sym.rArrow} GET #{url}")
+      logger.out(url)
       $.ajax(url, {
         type: 'GET'
 
         error: (jqXHR, status, error) ->
-          logger.err("#{sym.lArrow} GET #{url}: Error: #{status} #{error}")
+          logger.err(url, status, error)
 
-        success: (airports, status, jqXHR) ->
-          logger.in("#{sym.lArrow} GET #{url}")
-          airportsResults.update(feat.properties for feat in airports.airports.features)
-          map.updateAirports(airports.airports)
+        success: (data, status, jqXHR) ->
+          logger.in(url)
+          airportsResults.updateAirports({
+            country: data.country
+            airports: feat.properties for feat in data.airports.features
+          })
+          map.updateAirports(data.airports)
       })
-      #airportsResults.update(airportsUrl(countryCode))
-      #map.updateAirports(airports)
 
-    refreshRunwaysResults = (countryCode) ->
+    fetchRunways = (countryCode) ->
       url = runwaysUrl(countryCode)
-      logger.out("#{sym.rArrow} GET #{url}")
+      logger.out(url)
       $.ajax(url, {
         type: 'GET',
 
         error: (jqXHR, status, error) ->
-          logger.err("#{sym.lArrow} GET #{url}: Error: #{status} #{error}")
+          logger.err(url, status, error)
 
-        success: (runways, status, jqXHR) ->
-          logger.in("#{sym.lArrow} GET #{url}")
-          runwaysResults.update(runways.runways)
-          map.updateRunways(runways.runways)
+        success: (data, status, jqXHR) ->
+          logger.in(url)
+          runwaysResults.updateRunways(data)
+          map.updateRunways(data.runways)
       })
-      
-    refreshCountryResults = (country) ->
-      countriesResults.update(country)
-      refreshAirportsResults(country.code)
-      refreshRunwaysResults(country.code)
 
 
-    # receive function
-    receive = (msg) ->
-      data = JSON.parse(msg.data)
-      switch (data.type)
-        when 'error'
-          logger.err(data.result)
+    ### Country selected ###
+    query.onCountryResults((country) ->
+      fetchAirports(country.code)
+      fetchRunways(country.code)
+    )
 
-        when 'country-query-response'
-          switch (data.result.type)
-            when 'country-found'
-              logger.in("#{sym.lArrow} country-query-response/country-found: #{data.result.data.country.name}")
-              refreshCountryResults([data.result.data.country])
-              refreshAirportsResults(data.result.data.country.code)
-              refreshRunwaysResults(data.result.data.country.code)
-            when 'no-matches'
-              logger.warn("#{sym.lArrow} country-query-response/no-matches")
-              refreshCountryResults([])
-            when 'matching-countries'
-              logger.info("#{sym.lArrow} country-query-response/matching-countries: #{data.result.data.length} countries")
-              refreshCountryResults(data.result.data)
+    ### Airport selected ###
+    airportSelected = (airport) ->
+      logger.info(airportLogLine(airport))
+      runwaysResults.unselect()
+      runwaysResults.search(airport.ident)
 
-        when 'send-countries'
-          logger.in("#{sym.lArrow} send-countries")
-          query.setup(data.result.countries)
+    # selected from table -> select on map
+    airportsResults.onSelectRow((airport) ->
+      airportSelected(airport)
+      map.selectAirport(airport)
+    )
+    # selected from map -> select on table
+    map.onAirportSelected((airport) ->
+      airportSelected(airport)
+      airportsResults.selectAirport(airport)
+    )
 
-        when 'send-airports'
-          logger.in("#{sym.lArrow} send-airports for #{data.result.country.name}")
-          #refreshAirportsResults(data.result.airports)
+    ### Runway selected ###
+    runwaySelected = (runway) ->
+      if runway.lePosition? or runway.hePosition?
+        logger.info(runwayLogLine(runway))
+      else
+        logger.warn("#{runwayLogLine(runway)}: runway position not found!")
+      airportsResults.unselect()
 
-        when 'send-runways'
-          logger.in("#{sym.lArrow} send-runways for: #{data.result.country.name}")
-          #refreshRunwaysResults(data.result.runways)
+    # selected from table -> select on map
+    runwaysResults.onSelectRow((runway) ->
+      runwaySelected(runway)
+      map.selectRunway(runway)
+    )
+    # selected from map -> select on table
+    map.onRunwaySelected((runway) ->
+      runwaySelected(runway)
+      runwaysResults.selectRunway(runway)
+    )
 
-        else
-          logger.warn("#{lArrow} unknown message: #{data}")
-
-
-    logger.debug("Connecting to #{wsconfig.wsuri}…")
-    socket = new WebSocket(wsuri)
-
-    socket.onopen = (event) ->
-      logger.debug("Connected!")
-
-      socket.onmessage = receive
-      query = Query({
-        logger: logger
-        refresh: (data) ->
-          refreshCountryResults(data)
-      })
-      logger.out("#{sym.rArrow} countries-list")
-      socket.send(JSON.stringify({
-        type: 'countries-list'
-      }))
 
 ##############################################################################
   # Initialization #
   ##################
-
-  logger = Logger({
-    maxLogLines: 13
-  })
-
-  wsconfig = $('#ws-config').data()
-
-  controller = SocketController({
-    logger: logger
-    wsuri: wsconfig.wsuri
-  })
+  logger = Logger({maxLogLines: 13})
+  controller = Controller({logger: logger})
