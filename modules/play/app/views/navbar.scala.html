@@ -1,0 +1,25 @@
+<nav class="navbar navbar-default">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <a class="navbar-brand" href="@routes.UI.index">
+        <img src="@routes.Assets.versioned("images/Lunatech_Logo_Line_RGB_Pos_A.png")" class="img-thumbnail" alt="Lunatech" />
+      </a>
+    </div>
+    <div class="collapse navbar-collapse" id="lt-navbar-collapse-1">
+      <ul class="nav navbar-nav">
+        <li id="link-reports"><a href="@routes.UI.reports" />Reports</a></li>
+        <li id="link-query"><a href="@routes.UI.query" />Query</a></li>
+      </ul>
+      <form id="query-form" class="navbar-form navbar-left hidden">
+        <div class="form-group">
+          <input id="query-input" type="text" class="form-control" placeholder="Search country…">
+        </div>
+        <button id="query-submit" type="submit" class="btn btn-default">Submit</button>
+      </form>
+        <p id="map-hover-container" class="navbar-text nav navbar-nav navbar-right hidden">
+          <span id="map-hover-info" class="feature-name label label-info">&nbsp;</span>
+          <span id="map-hover-code" class="pull-right label label-default">&nbsp;</span>
+        </p>
+    </div>
+  </div>
+</nav>

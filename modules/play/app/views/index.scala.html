@@ -1,4 +1,4 @@
-@(countries: Int, airports: Int, runways: Int)(wsuri: String)
+@(stats: Stats)(wsuri: String)
 
 @main("Lunatech Assignment Home Page", wsuri) {
   <div class="row">
@@ -17,15 +17,15 @@
           <tbody>
             <tr>
               <td>Countries</td>
-              <td>@countries</td>
+              <td>@stats.countries</td>
             </tr>
             <tr>
               <td>Airports</td>
-              <td>@airports</td>
+              <td>@stats.airports</td>
             </tr>
             <tr>
               <td>Runways</td>
-              <td>@runways</td>
+              <td>@stats.runways</td>
             </tr>
           </tbody>
         </table>

@@ -1,4 +1,8 @@
-@(top10: Seq[(Country, Int)], low10: Seq[(Country, Int)], surf: Seq[(Country, String, Int)], topId: Seq[(String, Int)])(wsuri: String)
+@(top10: Seq[AirportsCountByCountry],
+  low10: Seq[AirportsCountByCountry],
+  surf: Seq[RunwaySurfacesCountByCountry],
+  topId: Seq[RunwayIdentsCount]
+)(wsuri: String)
 
 @main("Lunatech Assignment - Reports", wsuri) {
   <div class="row">

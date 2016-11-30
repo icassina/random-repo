@@ -2,7 +2,13 @@
 TwirlKeys.templateImports ++= Seq(
   "icassina.lunatech.Country",
   "icassina.lunatech.Airport",
-  "icassina.lunatech.Runway"
+  "icassina.lunatech.Runway",
+  "icassina.lunatech.Stats",
+  "icassina.lunatech.AirportsCountByCountry",
+  "icassina.lunatech.AirportsByCountry",
+  "icassina.lunatech.RunwaysByCountry",
+  "icassina.lunatech.RunwaySurfacesCountByCountry",
+  "icassina.lunatech.RunwayIdentsCount"
 )
 
 libraryDependencies ++= Seq(

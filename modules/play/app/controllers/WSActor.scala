@@ -39,16 +39,16 @@ object WSActor {
   object Response {
     sealed trait CountryQueryResp { self: Response => }
     sealed trait CountriesListResp { self: Response => }
-    case class CountryFound(country: Country)                           extends Response with CountryQueryResp
-    case object NoMatches                                               extends Response with CountryQueryResp
-    case class SendAirports(country: Country, airports: Seq[Airport])   extends Response with CountryQueryResp
-    case class SendRunways(country: Country, runways: Seq[Runway])      extends Response with CountryQueryResp
-    case class SendCountries(countries: Seq[Country] )                  extends Response with CountriesListResp
+    case class CountryFound(country: Country)                         extends Response with CountryQueryResp
+    case object NoMatches                                             extends Response with CountryQueryResp
+    case class SendAirports(airports: AirportsByCountry)              extends Response with CountryQueryResp
+    case class SendRunways(runways: RunwaysByCountry)                 extends Response with CountryQueryResp
+    case class SendCountries(countries: Seq[Country])                 extends Response with CountriesListResp
 
     sealed trait Error extends Response
     object Error {
-      case class MalformedMessage(msg: Message, errors: Seq[String]) extends Error with CountryQueryResp
-      case class NotCountryCode(queryStr: String) extends Error with CountryQueryResp
+      case class MalformedMessage(msg: Message, errors: Seq[String])  extends Error with CountryQueryResp
+      case class NotCountryCode(queryStr: String)                     extends Error with CountryQueryResp
     }
 
     implicit val responseWrite: Writes[Response] = Writes[Response] {
@@ -74,21 +74,15 @@ object WSActor {
             "countries"   -> countries
           )
         )
-      case SendAirports(country, airports) =>
+      case SendAirports(airports) =>
         Json.obj(
           "type"    -> "send-airports",
-          "result"  -> Json.obj(
-            "country"   -> country,
-            "airports"  -> AirportsFeatures(airports)
-          )
+          "result"  -> airports
         )
-      case SendRunways(country, runways) =>
+      case SendRunways(runways) =>
         Json.obj(
           "type"    -> "send-runways",
-          "result"  -> Json.obj(
-            "country"   -> country,
-            "runways"   -> runways
-          )
+          "result"  -> runways
         )
       case Error.MalformedMessage(msg, errors) => Json.obj(
         "type"    -> "error",
@@ -135,8 +129,8 @@ class WSActor(client: ActorRef)(implicit dao: DAO, ec: DAOExecutionContext) exte
             val airportsQuery = dao.airportsByCountry(queryStr)
             val runwaysQuery = dao.runwaysByCountry(queryStr)
 
-            airportsQuery.map(res => sendResponse(res.fold[Message.CountryQuery#Resp](NoMatches)(SendAirports.tupled)))
-            runwaysQuery.map(res => sendResponse(res.fold[Message.CountryQuery#Resp](NoMatches)(SendRunways.tupled)))
+            airportsQuery.map(res => sendResponse(res.fold[Message.CountryQuery#Resp](NoMatches)(SendAirports.apply)))
+            runwaysQuery.map(res => sendResponse(res.fold[Message.CountryQuery#Resp](NoMatches)(SendRunways.apply)))
           }
         }
       }

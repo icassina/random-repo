@@ -1,6 +1,5 @@
 package controllers
 
-import java.util.UUID
 import javax.inject.{Inject, Singleton}
 
 import akka.actor.ActorSystem
@@ -10,15 +9,10 @@ import play.api.mvc._
 import play.api.libs.json._
 import play.api.libs.streams._
 
-import icassina.lunatech.Country
-import icassina.lunatech.Airport
-import icassina.lunatech.Runway
-import icassina.lunatech.DAO
-import icassina.lunatech.DAOExecutionContext
-import icassina.lunatech.WSActor
+import icassina.lunatech._
 
 @Singleton
-class HomeController @Inject() (dao: DAO, daoEC: DAOExecutionContext, actorSystem: ActorSystem, m: Materializer) extends Controller {
+class UI @Inject() (dao: DAO, daoEC: DAOExecutionContext, actorSystem: ActorSystem, m: Materializer) extends Controller {
 
   private val logger = org.slf4j.LoggerFactory.getLogger(this.getClass)
 
@@ -26,13 +20,10 @@ class HomeController @Inject() (dao: DAO, daoEC: DAOExecutionContext, actorSyste
   implicit val as: ActorSystem = actorSystem
   implicit val mr: Materializer = m
 
-  private def wsuri(implicit req: Request[_]) = routes.HomeController.ws.webSocketURL(false)
+  private def wsuri(implicit req: Request[_]) = routes.UI.ws.webSocketURL(false)
 
   def index = Action.async { implicit request =>
-    dao.stats.map { case (countries, airports, runways) =>
-      logger.info("Calling index")
-      Ok(views.html.index(countries, airports, runways)(wsuri))
-    }
+    dao.stats.map(stats => Ok(views.html.index(stats)(wsuri)))
   }
 
   def reports = Action.async { implicit request =>

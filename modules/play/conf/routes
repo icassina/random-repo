@@ -3,10 +3,17 @@
 # ~~~~
 
 # Home page
-GET     /                           controllers.HomeController.index
-GET     /reports                    controllers.HomeController.reports
-GET     /query                      controllers.HomeController.query
-GET     /ws                         controllers.HomeController.ws
+GET     /                           controllers.UI.index
+GET     /reports                    controllers.UI.reports
+GET     /query                      controllers.UI.query
+GET     /ws                         controllers.UI.ws
+
+# Ajax
+
+GET     /api/stats                  controllers.API.stats
+GET     /api/country/:countryCode   controllers.API.country(countryCode: String)
+GET     /api/airports/:countryCode  controllers.API.airports(countryCode: String)
+GET     /api/runways/:countryCode   controllers.API.runways(countryCode: String)
 
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.versioned(path="/public", file: Asset)

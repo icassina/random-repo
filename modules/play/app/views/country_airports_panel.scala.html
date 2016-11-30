@@ -1,4 +1,4 @@
-@(title: String, rank: Seq[(Country, Int)])
+@(title: String, rank: Seq[AirportsCountByCountry])
 <div class="panel panel-primary">
   <div class="panel-heading">
     <h4>@title</h4>
@@ -16,7 +16,7 @@
       </tr>
     </thead>
     <tbody>
-    @rank.map { case (country, airports) =>
+    @rank.map { case AirportsCountByCountry(country, airports) =>
       <tr>
         <td>@country.id</td>
         <td>@country.code</td>

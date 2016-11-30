@@ -1,4 +1,4 @@
-@(rank: Seq[(Country, String, Int)])
+@(rank: Seq[RunwaySurfacesCountByCountry])
 <div class="panel panel-primary">
   <div class="panel-heading">
     <h4>
@@ -19,7 +19,7 @@
       </tr>
     </thead>
     <tbody>
-    @rank.map { case (country, surface, runways) =>
+    @rank.map { case RunwaySurfacesCountByCountry(country, surface, runways) =>
       <tr>
         <td><b>@surface</b></td>
         <td><b>@runways</b></td>

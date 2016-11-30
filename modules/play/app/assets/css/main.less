@@ -27,21 +27,43 @@
 }
 .feature-code {
   width: 60px;
+  line-height: 20px;
   display: inline-block;
 }
 
 
 #map-hover-container {
-  border-radius: 5px;
+  border-radius: @border-radius-base;
+  border: 1px solid @list-group-border;
 }
 #map-hover-info {
   line-height: 20px;
   text-align: left;
+  display: inline-block;
+  vertical-align: middle;
+  border-radius: @border-radius-base 0 0 @border-radius-base;
 }
 #map-hover-code {
   width: 60px;
   display: inline-block;
   line-height: 20px;
+  vertical-align: middle;
+  border-radius: 0 @border-radius-base @border-radius-base 0;
+}
+
+li.list-group-item.popover-table-info {
+  padding: 0;
+  border-top: 0;
+  > table {
+    margin-bottom: 0;
+    > tbody {
+      > tr {
+        > td:first-child {
+          padding-left: 15px;
+        }
+      }
+    }
+  }
 }
 
 .popover {
@@ -54,8 +76,13 @@
 }
 
 .popover-content {
-  min-width: 420px;
   background-color: transparent;
+  &.airport-content {
+    min-width: 420px;
+  }
+  &.runway-content {
+    min-width: 520px;
+  }
 }
 
 .popover-content .list-group-item {

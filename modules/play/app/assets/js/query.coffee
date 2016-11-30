@@ -1,12 +1,27 @@
 $ ->
 
-  ### Utils ###
-  renderBoolean = (bool) ->
-    if bool
-      """<span class="label label-success">&#x2714;</span>"""
-    else
-      """<span class="label label-danger">&#x2716;</span>"""
+  countryUrl = (countryCode) ->
+    "/api/country/#{countryCode}"
 
+  airportsUrl = (countryCode) ->
+    "/api/airports/#{countryCode}"
+
+  runwaysUrl = (countryCode) ->
+    "/api/runways/#{countryCode}"
+
+  ### constants ###
+  sym = {
+    airplane: '&#x2708;'
+    upArrow:  '&#x2b06;'
+    rArrow:   '&rarr;'
+    lArrow:   '&larr;'
+    emptySet: '&empty;'
+    space:    '&nbsp;'
+    true:     '&#x2714;'
+    false:    '&#x2716;'
+  }
+
+  ### Utils ###
   fold = (value) -> (none) -> (somef) ->
     if value?
       somef(value)
@@ -21,9 +36,9 @@ $ ->
         "#{value}"
     else
       if noneTag?
-        "<#{noneTag}>?</#{noneTag}>"
+        "<#{noneTag}>#{sym.emptySet}</#{noneTag}>"
       else
-        "?"
+        sym.emptySet
 
   renderLink = (link, text, alt) ->
     if link?
@@ -31,8 +46,34 @@ $ ->
     else
       """#{alt}"""
 
-  airplane = "&#x2708;"
-  upArrow = "&#x2b06;"
+  renderBoolean = (name) -> (bool) ->
+    if bool
+      """<span class="label label-success"><abbr title="#{name}: yes">#{sym.true}</abbr></span>"""
+    else
+      """<span class="label label-danger"><abbr title="#{name}: no">#{sym.false}</abbr></span>"""
+
+  renderOpen = (runway) ->
+    renderBoolean('Open')(! runway.closed)
+
+  renderLighted = (runway) ->
+    renderBoolean('Lighted')(runway.lighted)
+
+  airportLogLine = (airport) ->
+    extraInfo = ->
+      pre = if airport.municipality? then "in #{airport.municipality}" else "in"
+      "#{pre} #{airport.isoRegion} (type: #{airport.airportType})"
+
+    """#{sym.airplane} ##{airport.id} [#{airport.ident}] #{airport.name} #{extraInfo()}"""
+
+  runwayLogLine = (runway) ->
+    length = fold(runway.length)('')((l) -> ", length: #{l}")
+    width = fold(runway.width)('')((w) -> ", width: #{w}")
+    lighted = ", lighted: #{renderLighted(runway)}"
+    open = ", open: #{renderOpen(runway)}"
+
+    """
+      #{sym.upArrow} ##{runway.id} [#{runway.leIdent} | #{runway.heIdent}] #{runway.surface}#{length}#{width}#{open}#{lighted}
+    """
 
 ##############################################################################
   ### Logger ###
@@ -64,7 +105,7 @@ $ ->
       logArea.append("""<p class="#{pClass}">#{line}</p>""")
 
     for i in [0 .. maxLogLines]
-      _log('__internal__')("&nbsp;")
+      _log('__internal__')(sym.space)
 
     clear = () ->
       logLines = []
@@ -193,12 +234,11 @@ $ ->
       format: geoJSON
     })
 
+    # TODO: change radius according to zoom level
     airportsLayer = new ol.layer.Vector({
       id: 'airports'
       source: airportsSource
       style: (feat, resolution) ->
-        #console.log('airport style function')
-        #console.log(resolution)
         [airportStyle(feat).predef.zoom_0]
         #zoomKey = "zoom_#{zoom}"
         #styleBase = airportStyle(feat).predef
@@ -279,7 +319,7 @@ $ ->
       selectInteraction
     ])
 
-    showPopup = (content) -> (feat, coords) ->
+    showPopup = (content) -> (data, coords) ->
       element = $(popup.getElement())
       element.popover('destroy')
       popup.setPosition(coords)
@@ -287,40 +327,19 @@ $ ->
         placement:  'right'
         animation:  true
         html:       true
-        content:    content(feat, coords)
+        content:    content(data, coords)
       })
       element.popover('show')
 
-    classForAirportType = (airportType) ->
-      switch(airportType)
-        when 'small_airport'  then 'warning'
-        when 'medium_airport' then 'warning'
-        when 'large_airport'  then 'danger'
-        when 'baloonport'     then 'info'
-        when 'seaplane_base'  then 'primary'
-        when 'heliport'       then 'success'
-        when 'closed'         then 'default'
-        else 'default'
-
-    #classForRunway = (runway) ->
-      #if runway.closed
-        #'danger'
-      #else
-        #if runway.lighted
-          #'success'
-        #else
-          #'warning'
-
-    ### TODO: move this big chunk to somewhere else ###
-    airportContent = (feat, coords) ->
-      a = feat.getProperties()
+    airportContent = (data, coords) ->
+      a = data
       position = ol.coordinate.toStringHDMS(coords)
-      strong = (value) -> fold(value)('?')((v) -> "<strong>#{v}</strong>")
-      elevation = fold(a.elevation)('?')((v) -> "<strong>#{v}</strong> (ft)")
+      strong = (value) -> fold(value)(sym.emptySet)((v) -> "<strong>#{v}</strong>")
+      elevation = fold(a.elevation)(sym.emptySet)((v) -> "<strong>#{v}</strong> (ft)")
       """
         <ul class="list-group box-shadow">
           <li class="list-group-item list-group-item-info">
-            <span class="feature-name">#{airplane} #{a.name}</span>
+            <span class="feature-name"><strong>#{sym.airplane} #{a.name}</strong></span>
             <span class="feature-code pull-right label label-default">#{a.ident}</span>
           </li>
           <li class="list-group-item">Type: <strong>#{a.airportType}</strong></li>
@@ -328,34 +347,96 @@ $ ->
           <li class="list-group-item">Municipality: #{strong(a.municipality)}</li>
           <li class="list-group-item">Position: <strong><span class="text-primary">#{position}</span></strong></li>
           <li class="list-group-item">Elevation: #{elevation}</li>
-          <li class="list-group-item">Scheduled Service: #{renderBoolean(a.scheduledService)}</li>
+          <li class="list-group-item">Scheduled Service: #{renderBoolean('Scheduled service')(a.scheduledService)}</li>
           <li class="list-group-item">
             GPS: #{renderOption(a.gpsCode, 'strong')} |
             IATA: #{renderOption(a.iataCode, 'strong')} |
             Local: #{renderOption(a.localCode, 'strong')}
           </li>
-          <li class="list-group-item">#{renderLink(a.homeLink, 'Home: &rArr;', 'Home: ?')}</li>
-          <li class="list-group-item">#{renderLink(a.wikipediaLink, 'Wikipedia: &rArr;', 'Wikipedia: ?')}</li>
+          <li class="list-group-item">#{renderLink(a.homeLink, "Home: #{sym.rArrow}", "Home: #{sym.emptySet}")}</li>
+          <li class="list-group-item">#{renderLink(a.wikipediaLink, "Wikipedia: #{sym.rArrow}", "Wikipedia: #{sym.emptySet}")}</li>
           <li  class="list-group-item">Keywords: #{renderOption(a.keywords)}</li>
         </div>
       """
 
-    showAirportPopup = showPopup(airportContent)
-    #showRunwayPopup = showPopup(runwayContent)
+    runwayContent = (data, coords) ->
+      r = data
+      lePosition = fold(r.lePosition)(sym.emptySet)((v) -> ol.coordinate.toStringHDMS(v))
+      hePosition = fold(r.hePosition)(sym.emptySet)((v) -> ol.coordinate.toStringHDMS(v))
+      strong = (value) -> fold(value)(sym.emptySet)((v) -> "<strong>#{v}</strong>")
+      length = fold(r.length)(sym.emptySet)((v) -> "<strong>#{v}</strong> (ft)")
+      width = fold(r.width)(sym.emptySet)((v) -> "<strong>#{v}</strong> (ft)")
+      leElevation = fold(r.leElevation)(sym.emptySet)((v) -> "<strong>#{v}</strong> (ft)")
+      heElevation = fold(r.heElevation)(sym.emptySet)((v) -> "<strong>#{v}</strong> (ft)")
+      leHeading = fold(r.leHeading)(sym.emptySet)((v) -> "<strong>#{v}</strong> (deg)")
+      heHeading = fold(r.heHeading)(sym.emptySet)((v) -> "<strong>#{v}</strong> (deg)")
+      leDisplacement = fold(r.leDisplacementThreshold)(sym.emptySet)((v) -> "#{v} (ft)")
+      heDisplacement = fold(r.heDisplacementThreshold)(sym.emptySet)((v) -> "#{v} (ft)")
+      """
+        <ul class="list-group box-shadow">
+          <li class="list-group-item list-group-item-info">
+            <span class="feature-name"><strong>#{sym.upArrow} #{r.leIdent}</strong> | <strong>#{r.heIdent}</strong></span>
+            <span class="feature-code pull-right label label-default">#{renderOpen(r)} #{renderLighted(r)}</span>
+          </li>
+          <li class="list-group-item popover-table-info">
+            <table class="table table-runway-info">
+              <tbody>
+                <tr>
+                  <td>Surface:</td>
+                  <td colspan="2"><strong>#{r.surface}</strong></td>
+                </tr>
+                <tr>
+                  <td>Positions:</td>
+                  <td>#{lePosition}</td>
+                  <td>#{hePosition}</td>
+                </tr>
+                <tr>
+                  <td>Dimensions:</td>
+                  <td>#{length}</td>
+                  <td>#{width}</td>
+                </tr>
+                <tr>
+                  <td>Elevations:</td>
+                  <td>#{leElevation}</td>
+                  <td>#{heElevation}</td>
+                </tr>
+                <tr>
+                  <td>Headings:</td>
+                  <td>#{leHeading}</td>
+                  <td>#{heHeading}</td>
+                </tr>
+                <tr>
+                  <td>Disp. Threshs.:</td>
+                  <td>#{leDisplacement}</td>
+                  <td>#{heDisplacement}</td>
+                </tr>
+              </tbody>
+            </table>
+          </li>
+        </ul>
+      """
+
+    showAirportPopup = (data, coords) ->
+      showPopup(airportContent)(data, coords)
+      $('.popover-content').addClass('airport-content')
+
+    showRunwayPopup = (data, coords) ->
+      showPopup(runwayContent)(data, coords)
+      $('.popover-content').addClass('runway-content')
 
     hideHoverInfo = () ->
-      mapHoverCode.html('&nbsp;')
+      mapHoverInfo.html(sym.space)
+      mapHoverCode.html(sym.space)
       mapHoverCode.attr('class', 'pull-right label label-default')
-      mapHoverInfo.html('&nbsp;')
 
     showAiportHoverInfo = (data) ->
+      mapHoverInfo.html("""#{sym.airplane} #{data.name}""")
       mapHoverCode.html("""#{data.ident}""")
-      mapHoverInfo.html("""#{data.name}""")
 
     showRunwayHoverInfo = (data) ->
+      mapHoverInfo.html("""#{sym.upArrow} #{data.leIdent} #{data.surface}""")
       mapHoverCode.removeClass('hidden')
-      mapHoverCode.html("""#{renderBoolean(data.lighted)} #{renderBoolean(! data.closed)}""")
-      mapHoverInfo.html("""#{data.leIdent} #{data.surface}""")
+      mapHoverCode.html("""#{renderOpen(data)} #{renderLighted(data)}""")
 
     panTo = (location) ->
       pan = ol.animation.pan({
@@ -372,12 +453,12 @@ $ ->
       panTo(coords)
       switch (data.type)
         when 'airport'
-          showAirportPopup(feat, coords)
+          showAirportPopup(data, coords)
           if noNotify == false
             for cb in airportCallbacks
               cb(data)
         when 'runway'
-          #showRunwayPopup(feat, coords)
+          showRunwayPopup(data, coords)
           if noNotify == false
             for cb in runwayCallbacks
               cb(data)
@@ -387,14 +468,28 @@ $ ->
       element.popover('destroy')
     )
 
-    select = (type) -> (id) ->
+    selectFeat = (feat) ->
       selected.clear()
-      feat = switch (type)
-        when 'airport' then airportsSource.getFeatureById(id)
-        when 'runway' then runwaysSource.getFeatureById(id)
       noNotify = true
       selected.push(feat)
       noNotify = false
+
+    selectRunway = (runway) ->
+      feat = runwaysSource.getFeatureById(runway.id)
+      if feat?
+        selectFeat(feat)
+      else
+        logger.warn("#{runwayLogLine(runway)}: runway position not found!")
+        element = $(popup.getElement())
+        element.popover('destroy')
+        feat = airportsSource.getFeatureById(runway.airportRef)
+        showRunwayPopup(runway, feat.getGeometry().getCoordinates())
+
+
+    select = (type) -> (data) ->
+      feat = switch (type)
+        when 'airport' then selectFeat(airportsSource.getFeatureById(data.id))
+        when 'runway' then selectRunway(data)
 
     highlighted = hoverInteraction.getFeatures()
     highlighted.on('add', (event) ->
@@ -476,6 +571,7 @@ $ ->
       scrollCollapse:   false
       paging:           false
       scroller:         true
+      sAjaxSource:      null,
       rowId:            rowId
       columns:          columns
     })
@@ -528,12 +624,17 @@ $ ->
         notifySelected(data)
     )
 
-    update = (data) ->
-      dataTable.clear()
-      dataTable.rows.add(data).draw(true)
+    update = (url) ->
+      #dataTable.clear()
+      console.log("update @ #{url}")
+      dataTable.ajax.url(url).draw(true)
+      #dataTable.rows.add(data).draw(true)
 
     search = (query) ->
       dataTable.search(query).draw(true)
+
+    searchColumn = (idx) -> (query) ->
+      dataTable.columns(idx).search(query).draw(true)
 
     {
       update: update
@@ -541,6 +642,7 @@ $ ->
       onSelectRow:  (cb) -> selectCallbacks.push(cb)
       onUnselectRow: (cb) -> unselectCallbacks.push(cb)
       search: search
+      searchColumn: searchColumn
       select: select
       unselect: () ->
         noNotify = true
@@ -561,12 +663,12 @@ $ ->
       select: true
       rowId: idFn
       columns: [
-        { data: 'id' }
-        { data: 'ident' }
-        { data: 'name' }
-        { data: 'airportType' }
-        { data: 'isoRegion' }
-        { data: 'municipality' }
+        { data: 'features[].properties.id' }
+        { data: 'features[].properties.ident' }
+        { data: 'features[].properties.name' }
+        { data: 'features[].properties.airportType' }
+        { data: 'features[].properties.isoRegion' }
+        { data: 'features[].properties.municipality' }
       ]
     })
 
@@ -586,14 +688,14 @@ $ ->
       height: '22vh'
       rowId: idFn
       columns: [
-        { data: 'airportRef' }
+        { data: 'airportIdent' }
         { data: 'id' }
         { data: 'leIdent' }
         { data: 'surface' }
         { data: 'length' }
         { data: 'width' }
-        { data: 'lighted', render: renderBoolean }
-        { data: 'closed', render: (b) -> renderBoolean(! b) }
+        { data: 'closed', render: (b) -> renderBoolean('Open')(! b) }
+        { data: 'lighted', render: renderBoolean('Lighted') }
         { data: 'leHeading' }
         { data: 'leElevation' }
       ]
@@ -655,17 +757,21 @@ $ ->
     lastQuery = undefined
 
     logger = config.logger
-    socket = config.socket
+    refresh = config.refresh
 
     sendQuery = (queryStr) ->
       if queryStr != lastQuery
         if queryStr.length >= 2
           lastQuery = queryStr
-          logger.out("&rarr; country-query: #{queryStr}")
-          socket.send(JSON.stringify({
-            type: 'country-query'
-            query: queryStr
-          }))
+          url = countryUrl(queryStr)
+          logger.out("#{sym.rArrow} GET #{url}")
+          $.ajax(countryUrl(queryStr), {
+            type: 'GET'
+            success: (data, status, jqXHR) ->
+              refresh(data)
+            error: (jqXHR, status, error) ->
+              logger.err("#{sym.lArrow} GET #{url}: Error: #{status} #{error}")
+          })
 
     setup = (countries) ->
       selector = queryInput.selectize({
@@ -712,56 +818,39 @@ $ ->
     runwaysResults = RunwaysResults({logger: logger})
     countriesResults = CountriesResults({logger: logger})
 
-    logAirportSelected = (airport) ->
-      extraInfo = ->
-        pre = if airport.municipality? then "in #{airport.municipality}" else "in"
-        "#{pre} #{airport.isoRegion} (type: #{airport.airportType})"
-
-      logger.info(
-        """#{airplane} [#{airport.ident}] #{airport.name} #{extraInfo()}"""
-      )
-
-    logRunwaySelected = (runway) ->
-      length = fold(runway.length)('')((l) -> ", length: #{l}")
-      width = fold(runway.width)('')((w) -> ", width: #{w}")
-      lighted = ", lighted: #{renderBoolean(runway.lighted)}"
-      open = ", open: #{renderBoolean(! runway.open)}"
-
-      logger.info("""
-        #{upArrow} [#{runway.leIdent}] #{runway.surface}#{length}#{width}#{lighted}#{open}
-      """)
-
     airportsResults.onSelectRow((airport) ->
-      logAirportSelected(airport)
-      map.selectAirport(airport.id)
-      runwaysResults.search(airport.id)
+      logger.info(airportLogLine(airport))
+      map.selectAirport(airport)
+      runwaysResults.search(airport.ident)
     )
 
     map.onAirportSelected((airport) ->
-      logAirportSelected(airport)
+      logger.info(airportLogLine(airport))
       airportsResults.selectAirport(airport)
-      runwaysResults.search(airport.id)
+      runwaysResults.search(airport.ident)
     )
 
     runwaysResults.onSelectRow((runway) ->
-      logRunwaySelected(runway)
-      map.selectRunway(runway.id)
+      logger.info(runwayLogLine(runway))
+      map.selectRunway(runway)
     )
 
     map.onRunwaySelected((runway) ->
+      logger.info(runwayLogLine(runway))
       runwaysResults.selectRunway(runway)
     )
 
     refreshCountryResults = (countries) ->
       countriesResults.update(countries)
 
-    refreshAirportsResults = (airports) ->
-      airportsResults.update(feat.properties for feat in airports.features)
-      map.updateAirports(airports)
+    refreshAirportsResults = (countryCode) ->
+      #airportsResults.update(feat.properties for feat in airports.features)
+      airportsResults.update(airportsUrl(countryCode))
+      #map.updateAirports(airports)
 
-    refreshRunwaysResults = (runways) ->
-      runwaysResults.update(runways)
-      map.updateRunways(runways)
+    refreshRunwaysResults = (countryCode) ->
+      runwaysResults.update(runwaysUrl(countryCode))
+      #map.updateRunways(runways)
       
 
     # receive function
@@ -774,29 +863,31 @@ $ ->
         when 'country-query-response'
           switch (data.result.type)
             when 'country-found'
-              logger.in("&larr; country-query-response/country-found: #{data.result.data.country.name}")
+              logger.in("#{sym.lArrow} country-query-response/country-found: #{data.result.data.country.name}")
               refreshCountryResults([data.result.data.country])
+              refreshAirportsResults(data.result.data.country.code)
+              refreshRunwaysResults(data.result.data.country.code)
             when 'no-matches'
-              logger.warn("&larr; country-query-response/no-matches")
+              logger.warn("#{sym.lArrow} country-query-response/no-matches")
               refreshCountryResults([])
             when 'matching-countries'
-              logger.info("&larr; country-query-response/matching-countries: #{data.result.data.length} countries")
+              logger.info("#{sym.lArrow} country-query-response/matching-countries: #{data.result.data.length} countries")
               refreshCountryResults(data.result.data)
 
         when 'send-countries'
-          logger.in("&larr; send-countries")
+          logger.in("#{sym.lArrow} send-countries")
           query.setup(data.result.countries)
 
         when 'send-airports'
-          logger.in("&larr; send-airports for #{data.result.country.name}")
-          refreshAirportsResults(data.result.airports)
+          logger.in("#{sym.lArrow} send-airports for #{data.result.country.name}")
+          #refreshAirportsResults(data.result.airports)
 
         when 'send-runways'
-          logger.in("&larr; send-runways for: #{data.result.country.name}")
-          refreshRunwaysResults(data.result.runways)
+          logger.in("#{sym.lArrow} send-runways for: #{data.result.country.name}")
+          #refreshRunwaysResults(data.result.runways)
 
         else
-          logger.warn("unknown message: #{data}")
+          logger.warn("#{lArrow} unknown message: #{data}")
 
 
     logger.debug("Connecting to #{wsconfig.wsuri}…")
@@ -808,9 +899,11 @@ $ ->
       socket.onmessage = receive
       query = Query({
         logger: logger
-        socket: socket
+        refresh: (data) ->
+          console.log(data)
+          refreshCountryResults(data)
       })
-      logger.out("&rarr; countries-list")
+      logger.out("#{sym.rArrow} countries-list")
       socket.send(JSON.stringify({
         type: 'countries-list'
       }))
@@ -820,7 +913,7 @@ $ ->
   ##################
 
   logger = Logger({
-    maxLogLines: 14
+    maxLogLines: 13
   })
 
   wsconfig = $('#ws-config').data()

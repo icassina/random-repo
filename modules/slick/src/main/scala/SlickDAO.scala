@@ -22,26 +22,29 @@ class SlickDAO @Inject()(db: Database) extends DAO with Tables {
   override val profile: MyPostgresDriver = MyPostgresDriver
   import profile.api._
 
-  def stats(implicit ec: DAOExecutionContext): Future[(Int, Int, Int)] =
-    db.run(queries.stats.result)
+  def stats(implicit ec: DAOExecutionContext): Future[Stats] =
+    db.run(queries.stats.result.map(Stats.tupled))
+
+  def country(countryCode: String)(implicit ec: DAOExecutionContext): Future[Option[Country]] =
+    db.run(Countries.filter(_.code === countryCode).result.headOption)
 
   def countries(implicit ec: DAOExecutionContext): Future[Seq[Country]] =
     db.run(Countries.result)
 
-  def airportsByCountry(countryCode: String)(implicit ec: DAOExecutionContext): Future[Option[(Country, Seq[Airport])]] =
+  def airportsByCountry(countryCode: String)(implicit ec: DAOExecutionContext): Future[Option[AirportsByCountry]] =
     db.run {
       Countries.filter(_.code === countryCode).result.headOption.flatMap { countryOpt =>
         countryOpt.map { country =>
           Airports.filter(_.isoCountry === country.code).result.map(airports => country -> airports)
-        }.fold[DBIOAction[Option[(Country, Seq[Airport])], NoStream, Effect.Read]](DBIO.successful(None)) { dbio =>
+        }.fold[DBIOAction[Option[AirportsByCountry], NoStream, Effect.Read]](DBIO.successful(None)) { dbio =>
           dbio.map { case (country, airports) =>
-            Some(country -> airports)
+            Some(AirportsByCountry(country, airports))
           }
         } // ugliness due to https://github.com/slick/slick/issues/1192 (DBIO.sequence not working on Option monad)
       }
     }
 
-  def runwaysByCountry(countryCode: String)(implicit ec: DAOExecutionContext): Future[Option[(Country, Seq[Runway])]] =
+  def runwaysByCountry(countryCode: String)(implicit ec: DAOExecutionContext): Future[Option[RunwaysByCountry]] =
     db.run {
       Countries.filter(_.code === countryCode).result.headOption.flatMap { countryOpt =>
         countryOpt.map { country =>
@@ -50,34 +53,38 @@ class SlickDAO @Inject()(db: Database) extends DAO with Tables {
               runway <- Runways
               airport <- runway.airport
               if airport.isoCountry === country.code
-            } yield runway
+            } yield (runway, airport)
           )
-          runways.result.map(runways => country -> runways)
-        }.fold[DBIOAction[Option[(Country, Seq[Runway])], NoStream, Effect.Read]](DBIO.successful(None)) { dbio =>
+          runways.result.map(runways =>
+            country -> runways.map { case (runway, airport) =>
+              RunwayWithAirportIdent(runway, airport.ident)
+            }
+          )
+        }.fold[DBIOAction[Option[RunwaysByCountry], NoStream, Effect.Read]](DBIO.successful(None)) { dbio =>
           dbio.map { case (country, runways) =>
-            Some(country -> runways)
+            Some(RunwaysByCountry(country, runways))
           }
         } // ugliness due to https://github.com/slick/slick/issues/1192 (DBIO.sequence not working on Option monad)
       }
     }
 
-  def allAirportsByCountry(implicit ec: DAOExecutionContext): Future[Seq[(Country, Int)]] =
-    db.run(queries.countAirportsByCountry.result)
+  def allAirportsByCountry(implicit ec: DAOExecutionContext): Future[Seq[AirportsCountByCountry]] =
+    db.run(queries.countAirportsByCountry.result.map(_.map(AirportsCountByCountry.tupled)))
 
-  def topTenCountries(implicit ec: DAOExecutionContext): Future[Seq[(Country, Int)]] =
-    db.run(queries.countAirportsByCountry.sortBy(_._2.desc).take(10).result)
+  def topTenCountries(implicit ec: DAOExecutionContext): Future[Seq[AirportsCountByCountry]] =
+    db.run(queries.countAirportsByCountry.sortBy(_._2.desc).take(10).result.map(_.map(AirportsCountByCountry.tupled)))
 
-  def bottomTenCountries(implicit ec: DAOExecutionContext): Future[Seq[(Country, Int)]] =
-    db.run(queries.countAirportsByCountry.sortBy(_._2.asc).take(10).result)
+  def bottomTenCountries(implicit ec: DAOExecutionContext): Future[Seq[AirportsCountByCountry]] =
+    db.run(queries.countAirportsByCountry.sortBy(_._2.asc).take(10).result.map(_.map(AirportsCountByCountry.tupled)))
 
-  def airportsAndRunwaysByCountry(implicit ec: DAOExecutionContext): Future[Seq[(Country, Int, Int)]] =
-    db.run(queries.countAirportsAndRunwaysByCountry.result)
+  def airportsAndRunwaysByCountry(implicit ec: DAOExecutionContext): Future[Seq[AirportsAndRunwaysCountByCountry]] =
+    db.run(queries.countAirportsAndRunwaysByCountry.result.map(_.map(AirportsAndRunwaysCountByCountry.tupled)))
 
-  def runwaySurfacesByCountry(implicit ec: DAOExecutionContext): Future[Seq[(Country, String, Int)]] =
-    db.run(queries.countSurfacesByCountry.result)
+  def runwaySurfacesByCountry(implicit ec: DAOExecutionContext): Future[Seq[RunwaySurfacesCountByCountry]] =
+    db.run(queries.countSurfacesByCountry.result.map(_.map(RunwaySurfacesCountByCountry.tupled)))
 
-  def topRunwayIdents(implicit ec: DAOExecutionContext): Future[Seq[(String, Int)]] =
-    db.run(queries.countIdents.result).map(_.take(10))
+  def topRunwayIdents(implicit ec: DAOExecutionContext): Future[Seq[RunwayIdentsCount]] =
+    db.run(queries.countIdents.take(10).result.map(_.map(RunwayIdentsCount.tupled)))
 
   def close() = Future.successful(db.close())
 
