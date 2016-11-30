@@ -33,9 +33,21 @@ class API @Inject() (dao: DAO, daoEC: DAOExecutionContext) extends Controller {
     )
   }
 
+  def airportsGeoJSON(countryCode: String) = Action.async {
+    dao.airportsByCountry(countryCode).map(airports =>
+      airports.fold[Result](NotFound)(airports => Ok(Json.toJson(AirportsByCountryFeatures(airports))))
+    )
+  }
+
   def runways(countryCode: String) = Action.async {
     dao.runwaysByCountry(countryCode).map(runways =>
       runways.fold[Result](NotFound)(runways => Ok(Json.toJson(runways)))
+    )
+  }
+
+  def runwaysGeoJSON(countryCode: String) = Action.async {
+    dao.runwaysByCountry(countryCode).map(runways =>
+      runways.fold[Result](NotFound)(runways => Ok(Json.toJson(RunwaysByCountryFeatures(runways))))
     )
   }
 }

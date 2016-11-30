@@ -101,11 +101,11 @@ object Messages {
       "features" -> d.airports.map(AirportFeature.apply)
     )
   }
-  case class RunwayFeature(runway: Runway) extends AnyVal
+  case class RunwayFeature(runway: RunwayWithAirportIdent) extends AnyVal
   implicit val runwayFeatureWrite: Writes[RunwayFeature] = Writes[RunwayFeature] { d =>
-    d.runway.lePosition.map(p => Seq(p.getX, p.getY)).map { coords =>
+    d.runway.runway.lePosition.map(p => Seq(p.getX, p.getY)).map { coords =>
       Json.obj(
-        "id"        -> d.runway.id,
+        "id"        -> d.runway.runway.id,
         "type"      -> "Feature",
         "geometry"  -> Json.obj(
           "type"        -> "Point",
@@ -114,9 +114,9 @@ object Messages {
         "properties" -> Json.toJson(d.runway)
       )
     }.orElse {
-      d.runway.hePosition.map(p => Seq(p.getX, p.getY)).map { coords =>
+      d.runway.runway.hePosition.map(p => Seq(p.getX, p.getY)).map { coords =>
         Json.obj(
-          "id"        -> d.runway.id,
+          "id"        -> d.runway.runway.id,
           "type"      -> "Feature",
           "geometry"  -> Json.obj(
             "type"        -> "Point",
@@ -128,7 +128,7 @@ object Messages {
     }.getOrElse(JsNull)
   }
 
-  case class RunwaysFeatures(runways: Seq[Runway]) extends AnyVal
+  case class RunwaysFeatures(runways: Seq[RunwayWithAirportIdent]) extends AnyVal
   implicit val runwaysFeaturesWrite: Writes[RunwaysFeatures] = Writes[RunwaysFeatures] { d =>
     Json.obj(
       "type"      -> "FeatureCollection",
@@ -156,11 +156,25 @@ object Messages {
       "airports"  -> d.airports
     )
   }
+  case class AirportsByCountryFeatures(airports: AirportsByCountry) extends AnyVal
+  implicit val airportsByCountrFeaturesWrite: Writes[AirportsByCountryFeatures] = Writes[AirportsByCountryFeatures] { d =>
+    Json.obj(
+      "country"   -> d.airports.country,
+      "airports"  -> AirportsFeatures(d.airports.airports)
+    )
+  }
 
   implicit val runwaysByCountryWrite: Writes[RunwaysByCountry] = Writes[RunwaysByCountry] { d =>
     Json.obj(
       "country"   -> d.country,
       "runways"   -> d.runways
+    )
+  }
+  case class RunwaysByCountryFeatures(runways: RunwaysByCountry) extends AnyVal
+  implicit val runwaysByCountrFeaturesWrite: Writes[RunwaysByCountryFeatures] = Writes[RunwaysByCountryFeatures] { d =>
+    Json.obj(
+      "country"   -> d.runways.country,
+      "runways"  -> RunwaysFeatures(d.runways.runways)
     )
   }
 

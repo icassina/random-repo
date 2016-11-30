@@ -2,18 +2,22 @@
 # This file defines all application routes (Higher priority routes first)
 # ~~~~
 
-# Home page
-GET     /                           controllers.UI.index
-GET     /reports                    controllers.UI.reports
-GET     /query                      controllers.UI.query
-GET     /ws                         controllers.UI.ws
+# HTML
+GET     /                                   controllers.UI.index
+GET     /reports                            controllers.UI.reports
+GET     /query                              controllers.UI.query
 
-# Ajax
+# WebSocket
+GET     /ws                                 controllers.UI.ws
 
-GET     /api/stats                  controllers.API.stats
-GET     /api/country/:countryCode   controllers.API.country(countryCode: String)
-GET     /api/airports/:countryCode  controllers.API.airports(countryCode: String)
-GET     /api/runways/:countryCode   controllers.API.runways(countryCode: String)
+# JSON
+GET     /api/stats                          controllers.API.stats
+GET     /api/country/:countryCode           controllers.API.country(countryCode: String)
+#GET     /api/country/:query/fuzzy           controllers.API.countryFuzzy(query: String)
+GET     /api/airports/:countryCode          controllers.API.airports(countryCode: String)
+GET     /api/runways/:countryCode           controllers.API.runways(countryCode: String)
+GET     /api/airports/:countryCode/geojson  controllers.API.airportsGeoJSON(countryCode: String)
+GET     /api/runways/:countryCode/geojson   controllers.API.runwaysGeoJSON(countryCode: String)
 
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.versioned(path="/public", file: Asset)

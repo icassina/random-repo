@@ -1,13 +1,19 @@
 $ ->
 
+  countriesBaseUrl = '/api/country'
+  airportsBaseUrl = '/api/airports'
+  runwaysBaseUrl = '/api/runways'
+
   countryUrl = (countryCode) ->
-    "/api/country/#{countryCode}"
+    "#{countriesBaseUrl}/#{countryCode}"
 
-  airportsUrl = (countryCode) ->
-    "/api/airports/#{countryCode}"
+  airportsUrl = (countryCode, suffix) ->
+    extra = if suffix? then "/#{suffix}" else ""
+    "#{airportsBaseUrl}/#{countryCode}#{extra}"
 
-  runwaysUrl = (countryCode) ->
-    "/api/runways/#{countryCode}"
+  runwaysUrl = (countryCode, suffix) ->
+    extra = if suffix? then "/#{suffix}" else ""
+    "#{runwaysBaseUrl}/#{countryCode}#{extra}"
 
   ### constants ###
   sym = {
@@ -61,7 +67,7 @@ $ ->
   airportLogLine = (airport) ->
     extraInfo = ->
       pre = if airport.municipality? then "in #{airport.municipality}" else "in"
-      "#{pre} #{airport.isoRegion} (type: #{airport.airportType})"
+      "#{pre} #{airport.isoRegion} (#{airport.airportType})"
 
     """#{sym.airplane} ##{airport.id} [#{airport.ident}] #{airport.name} #{extraInfo()}"""
 
@@ -102,7 +108,7 @@ $ ->
         logArea.children().first().remove()
 
       logLines.push(line)
-      logArea.append("""<p class="#{pClass}">#{line}</p>""")
+      logArea.append("""<p class="log-line #{pClass}">#{line}</p>""")
 
     for i in [0 .. maxLogLines]
       _log('__internal__')(sym.space)
@@ -438,11 +444,17 @@ $ ->
       mapHoverCode.removeClass('hidden')
       mapHoverCode.html("""#{renderOpen(data)} #{renderLighted(data)}""")
 
-    panTo = (location) ->
+    panTo = (location) -> (cb) ->
       pan = ol.animation.pan({
+        duration: 500
         source: view.getCenter()
       })
-      map.beforeRender(pan)
+      map.beforeRender((map, framestate) ->
+        animation = pan(map, framestate)
+        if animation == false
+          cb()
+        animation
+      )
       view.setCenter(location)
 
     selected = selectInteraction.getFeatures()
@@ -450,15 +462,14 @@ $ ->
       feat = event.target.item(0)
       coords = feat.getGeometry().getCoordinates()
       data = feat.getProperties()
-      panTo(coords)
       switch (data.type)
         when 'airport'
-          showAirportPopup(data, coords)
+          panTo(coords)(() -> showAirportPopup(data, coords))
           if noNotify == false
             for cb in airportCallbacks
               cb(data)
         when 'runway'
-          showRunwayPopup(data, coords)
+          panTo(coords)(() -> showRunwayPopup(data, coords))
           if noNotify == false
             for cb in runwayCallbacks
               cb(data)
@@ -571,7 +582,6 @@ $ ->
       scrollCollapse:   false
       paging:           false
       scroller:         true
-      sAjaxSource:      null,
       rowId:            rowId
       columns:          columns
     })
@@ -592,12 +602,15 @@ $ ->
           cb(data)
 
     unselect = () ->
-      dataTable.$('tr.selected').each(() ->
+      console.log('unselect')
+      dataTable.$('.selected').each(() ->
         self = $(this)
+        console.log(self)
         data = getSelectedData()
         self.removeClass('selected active')
         notifyUnselected(data)
       )
+      dataTable.draw(false)
 
     select = (id) ->
       noNotify = true
@@ -624,11 +637,9 @@ $ ->
         notifySelected(data)
     )
 
-    update = (url) ->
-      #dataTable.clear()
-      console.log("update @ #{url}")
-      dataTable.ajax.url(url).draw(true)
-      #dataTable.rows.add(data).draw(true)
+    update = (data) ->
+      dataTable.clear()
+      dataTable.rows.add(data).draw(true)
 
     search = (query) ->
       dataTable.search(query).draw(true)
@@ -663,12 +674,12 @@ $ ->
       select: true
       rowId: idFn
       columns: [
-        { data: 'features[].properties.id' }
-        { data: 'features[].properties.ident' }
-        { data: 'features[].properties.name' }
-        { data: 'features[].properties.airportType' }
-        { data: 'features[].properties.isoRegion' }
-        { data: 'features[].properties.municipality' }
+        { data: 'id' }
+        { data: 'ident' }
+        { data: 'name' }
+        { data: 'airportType' }
+        { data: 'isoRegion' }
+        { data: 'municipality' }
       ]
     })
 
@@ -767,10 +778,13 @@ $ ->
           logger.out("#{sym.rArrow} GET #{url}")
           $.ajax(countryUrl(queryStr), {
             type: 'GET'
-            success: (data, status, jqXHR) ->
-              refresh(data)
+
             error: (jqXHR, status, error) ->
               logger.err("#{sym.lArrow} GET #{url}: Error: #{status} #{error}")
+
+            success: (data, status, jqXHR) ->
+              logger.in("#{sym.lArrow} GET #{url}")
+              refresh(data)
           })
 
     setup = (countries) ->
@@ -821,37 +835,66 @@ $ ->
     airportsResults.onSelectRow((airport) ->
       logger.info(airportLogLine(airport))
       map.selectAirport(airport)
+      runwaysResults.unselect()
       runwaysResults.search(airport.ident)
     )
 
     map.onAirportSelected((airport) ->
       logger.info(airportLogLine(airport))
       airportsResults.selectAirport(airport)
+      runwaysResults.unselect()
       runwaysResults.search(airport.ident)
     )
 
     runwaysResults.onSelectRow((runway) ->
       logger.info(runwayLogLine(runway))
       map.selectRunway(runway)
+      airportsResults.unselect()
     )
 
     map.onRunwaySelected((runway) ->
       logger.info(runwayLogLine(runway))
       runwaysResults.selectRunway(runway)
+      airportsResults.unselect()
     )
 
-    refreshCountryResults = (countries) ->
-      countriesResults.update(countries)
-
     refreshAirportsResults = (countryCode) ->
-      #airportsResults.update(feat.properties for feat in airports.features)
-      airportsResults.update(airportsUrl(countryCode))
+      url = airportsUrl(countryCode, 'geojson')
+      logger.out("#{sym.rArrow} GET #{url}")
+      $.ajax(url, {
+        type: 'GET'
+
+        error: (jqXHR, status, error) ->
+          logger.err("#{sym.lArrow} GET #{url}: Error: #{status} #{error}")
+
+        success: (airports, status, jqXHR) ->
+          logger.in("#{sym.lArrow} GET #{url}")
+          airportsResults.update(feat.properties for feat in airports.airports.features)
+          map.updateAirports(airports.airports)
+      })
+      #airportsResults.update(airportsUrl(countryCode))
       #map.updateAirports(airports)
 
     refreshRunwaysResults = (countryCode) ->
-      runwaysResults.update(runwaysUrl(countryCode))
-      #map.updateRunways(runways)
+      url = runwaysUrl(countryCode)
+      logger.out("#{sym.rArrow} GET #{url}")
+      $.ajax(url, {
+        type: 'GET',
+
+        error: (jqXHR, status, error) ->
+          logger.err("#{sym.lArrow} GET #{url}: Error: #{status} #{error}")
+
+        success: (runways, status, jqXHR) ->
+          logger.in("#{sym.lArrow} GET #{url}")
+          runwaysResults.update(runways.runways)
+          map.updateRunways(runways.runways)
+      })
       
+    refreshCountryResults = (country) ->
+      countriesResults.update(country)
+      refreshAirportsResults(country.code)
+      refreshRunwaysResults(country.code)
+
 
     # receive function
     receive = (msg) ->
@@ -900,7 +943,6 @@ $ ->
       query = Query({
         logger: logger
         refresh: (data) ->
-          console.log(data)
           refreshCountryResults(data)
       })
       logger.out("#{sym.rArrow} countries-list")
