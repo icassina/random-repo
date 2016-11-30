@@ -571,6 +571,11 @@ $ ->
         when 'airport' then selectFeat(airportsSource.getFeatureById(data.id))
         when 'runway' then selectRunway(data)
 
+    unselect = () ->
+      noNotify = true
+      selected.clear()
+      noNotify = false
+
     highlighted = hoverInteraction.getFeatures()
     highlighted.on('add', (event) ->
       feat = event.target.item(0)
@@ -627,6 +632,7 @@ $ ->
       onRunwaySelected: registerRunwayCallback
       selectAirport: select('airport')
       selectRunway: select('runway')
+      unselect: unselect
     }
 
 
@@ -796,7 +802,8 @@ $ ->
     querySubmit = $('#query-submit')
     selector = undefined
     lastQuery = undefined
-    callbacks = []
+    afterCallbacks = []
+    beforeCallbacks = []
 
     logger = config.logger
     refresh = config.refresh
@@ -806,6 +813,8 @@ $ ->
         if queryStr.length >= 2
           lastQuery = queryStr
           url = countryUrl(queryStr)
+          for cb in beforeCallbacks
+            cb()
           logger.out(url)
           $.ajax(countryUrl(queryStr), {
             type: 'GET'
@@ -815,7 +824,7 @@ $ ->
 
             success: (data, status, jqXHR) ->
               logger.in(url)
-              for cb in callbacks
+              for cb in afterCallbacks
                 cb(data)
           })
 
@@ -855,11 +864,9 @@ $ ->
         setup(data)
     })
 
-    registerCallback = (cb) ->
-      callbacks.push(cb)
-
     {
-      onCountryResults: registerCallback
+      beforeRequest: (cb) -> beforeCallbacks.push(cb)
+      onCountryResults: (cb) -> afterCallbacks.push(cb)
     }
 
 
@@ -909,6 +916,9 @@ $ ->
 
 
     ### Country selected ###
+    query.beforeRequest(() ->
+      map.unselect()
+    )
     query.onCountryResults((country) ->
       fetchAirports(country.code)
       fetchRunways(country.code)
