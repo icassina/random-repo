@@ -59,15 +59,20 @@ $ ->
     else
       """<span class="label label-danger"><abbr title="#{name}: no">#{sym.false}</abbr></span>"""
 
+  renderPosition = (coords) -> """<strong><span class="text-primary">#{ol.coordinate.toStringHDMS(coords)}</span></strong>"""
+
+  renderPositionOpt = (p) -> foldOpt(p)(sym.emptySet)(renderPosition)
+
+  renderFeetOpt = (f) -> foldOpt(f)(sym.emptySet)((v) -> """<strong>#{v}</strong> (ft)""")
+
+  renderIdent = (runway) ->
+    """#{renderOption(runway.leIdent, 'strong')} | #{renderOption(runway.heIdent, 'strong')}"""
+
   renderOpen = (runway) ->
     renderBoolean('Open')(! runway.closed)
 
   renderLighted = (runway) ->
     renderBoolean('Lighted')(runway.lighted)
-
-  renderPosition = (coords) -> """<strong><span class="text-primary">#{ol.coordinate.toStringHDMS(coords)}</span></strong>"""
-
-  renderPositionOpt = (p) -> foldOpt(p)(sym.emptySet)(renderPosition)
 
   airportLogLine = (airport) ->
     extraInfo = ->
@@ -79,18 +84,18 @@ $ ->
     """
 
   runwayLogLine = (runway) ->
+    ident = renderIdent(runway)
     length = foldOpt(runway.length)('')((l) -> ", length: #{l}")
     width = foldOpt(runway.width)('')((w) -> ", width: #{w}")
     lighted = ", lighted: #{renderLighted(runway)}"
     open = ", open: #{renderOpen(runway)}"
 
     """
-      #{sym.upArrow} ##{runway.id} [#{runway.leIdent} | #{runway.heIdent}] #{runway.surface}#{length}#{width}#{open}#{lighted}
+      #{sym.upArrow} ##{runway.id} [#{ident}] #{runway.surface}#{length}#{width}#{open}#{lighted}
     """
 
   countryLogLine = (country) ->
     """
-      #{country.name} [#{country.code}/#{country.continent}]
     """
 
 
@@ -218,9 +223,9 @@ $ ->
         closed:         { color: {r:  50, g:  50, b:  50}, radius:  6, shape: 'cross',    index: 4 }
       }
       runways: {
-        lighted:        { color: {r:  50, g: 150, b:  70}, radius:  5, shape: 'square',   index: 3 }
-        notLighted:     { color: {r:  50, g:  80, b: 180}, radius:  4, shape: 'triangle', index: 2 }
-        closed:         { color: {r:  50, g:  50, b:  50}, radius:  3, shape: 'cross',    index: 1 }
+        lighted:        { color: {r:  50, g: 150, b:  70}, radius:  8, shape: 'square',   index: 3 }
+        notLighted:     { color: {r:  50, g:  80, b: 180}, radius:  8, shape: 'triangle', index: 2 }
+        closed:         { color: {r:  50, g:  50, b:  50}, radius:  6, shape: 'cross',    index: 1 }
       }
     }
 
@@ -381,9 +386,6 @@ $ ->
 
     airportContent = (data, coords) ->
       a = data
-      position = renderPosition(coords)
-      strong = (value) -> foldOpt(value)(sym.emptySet)((v) -> "<strong>#{v}</strong>")
-      elevation = foldOpt(a.elevation)(sym.emptySet)((v) -> "<strong>#{v}</strong> (ft)")
       """
         <ul class="list-group box-shadow">
           <li class="list-group-item list-group-item-info">
@@ -399,19 +401,19 @@ $ ->
                 </tr>
                 <tr>
                   <td>Region:</td>
-                  <td colspan="3">#{strong(a.isoRegion)}</td>
+                  <td colspan="3">#{renderOption(a.isoRegion, 'strong')}</td>
                 </tr>
                 <tr>
                   <td>Municipality:</td>
-                  <td colspan="3">#{strong(a.municipality)}</td>
+                  <td colspan="3">#{renderOption(a.municipality, 'strong')}</td>
                 </tr>
                 <tr>
                   <td>Position:</td>
-                  <td colspan="3">#{position}</td>
+                  <td colspan="3">#{renderPosition(coords)}</td>
                 </tr>
                 <tr>
                   <td>Elevation:</td>
-                  <td colspan="3">#{elevation}</td>
+                  <td colspan="3">#{renderFeetOpt(a.elevation)}</td>
                 </tr>
                 <tr>
                   <td>Scheduled Service:</td>
@@ -440,21 +442,14 @@ $ ->
 
     runwayContent = (data, coords) ->
       r = data
-      lePosition = renderPositionOpt(r.lePosition)
-      hePosition = renderPositionOpt(r.hePosition)
-      strong = (value) -> foldOpt(value)(sym.emptySet)((v) -> "<strong>#{v}</strong>")
-      length = foldOpt(r.length)(sym.emptySet)((v) -> "<strong>#{v}</strong> (ft)")
-      width = foldOpt(r.width)(sym.emptySet)((v) -> "<strong>#{v}</strong> (ft)")
-      leElevation = foldOpt(r.leElevation)(sym.emptySet)((v) -> "<strong>#{v}</strong> (ft)")
-      heElevation = foldOpt(r.heElevation)(sym.emptySet)((v) -> "<strong>#{v}</strong> (ft)")
-      leHeading = foldOpt(r.leHeading)(sym.emptySet)((v) -> "<strong>#{v}</strong> (deg)")
-      heHeading = foldOpt(r.heHeading)(sym.emptySet)((v) -> "<strong>#{v}</strong> (deg)")
-      leDisplacement = foldOpt(r.leDisplacementThreshold)(sym.emptySet)((v) -> "#{v} (ft)")
-      heDisplacement = foldOpt(r.heDisplacementThreshold)(sym.emptySet)((v) -> "#{v} (ft)")
+      leHeading = renderFeetOpt(r.leHeading)
+      heHeading = renderFeetOpt(r.heHeading)
+      leDisplacement = renderFeetOpt(r.leDisplacementThreshold)
+      heDisplacement = renderFeetOpt(r.heDisplacementThreshold)
       """
         <ul class="list-group box-shadow">
           <li class="list-group-item list-group-item-info">
-            <span class="feature-name"><strong>#{sym.upArrow} #{r.leIdent}</strong> | <strong>#{r.heIdent}</strong></span>
+            <span class="feature-name"><strong>#{sym.upArrow} #{renderIdent(r)}</span>
             <span class="feature-code pull-right label label-default">#{renderOpen(r)} #{renderLighted(r)}</span>
           </li>
           <li class="list-group-item popover-table-info">
@@ -466,28 +461,28 @@ $ ->
                 </tr>
                 <tr>
                   <td>Positions:</td>
-                  <td>#{lePosition}</td>
-                  <td>#{hePosition}</td>
+                  <td>#{renderPosition(r.lePosition)}</td>
+                  <td>#{renderPosition(r.hePosition)}</td>
                 </tr>
                 <tr>
                   <td>Dimensions:</td>
-                  <td>#{length}</td>
-                  <td>#{width}</td>
+                  <td>#{renderFeetOpt(r.length)}</td>
+                  <td>#{renderFeetOpt(r.width)}</td>
                 </tr>
                 <tr>
                   <td>Elevations:</td>
-                  <td>#{leElevation}</td>
-                  <td>#{heElevation}</td>
+                  <td>#{renderFeetOpt(r.leElevation)}</td>
+                  <td>#{renderFeetOpt(r.heElevation)}</td>
                 </tr>
                 <tr>
                   <td>Headings:</td>
-                  <td>#{leHeading}</td>
-                  <td>#{heHeading}</td>
+                  <td>#{renderFeetOpt(leHeading)}</td>
+                  <td>#{renderFeetOpt(heHeading)}</td>
                 </tr>
                 <tr>
                   <td>Disp. Threshs.:</td>
-                  <td>#{leDisplacement}</td>
-                  <td>#{heDisplacement}</td>
+                  <td>#{renderFeetOpt(leDisplacement)}</td>
+                  <td>#{renderFeetOpt(heDisplacement)}</td>
                 </tr>
               </tbody>
             </table>
@@ -513,7 +508,7 @@ $ ->
       mapHoverCode.html("""#{data.ident}""")
 
     showRunwayHoverInfo = (data) ->
-      mapHoverInfo.html("""#{sym.upArrow} #{data.leIdent} #{data.surface}""")
+      mapHoverInfo.html("""#{sym.upArrow} #{renderIdent(data)} #{data.surface}""")
       mapHoverCode.removeClass('hidden')
       mapHoverCode.html("""#{renderOpen(data)} #{renderLighted(data)}""")
 
@@ -769,11 +764,12 @@ $ ->
         { data: 'airportIdent' }
         { data: 'id' }
         { data: 'leIdent' }
+        { data: 'heIdent' }
         { data: 'surface' }
         { data: 'length' }
         { data: 'width' }
-        { data: 'closed', render: (b) -> renderBoolean('Open')(! b) }
-        { data: 'lighted', render: renderBoolean('Lighted') }
+        { data: 'closed',       render: (b) -> renderBoolean('Open')(! b) }
+        { data: 'lighted',      render: renderBoolean('Lighted') }
         { data: 'leHeading' }
         { data: 'leElevation' }
       ]
