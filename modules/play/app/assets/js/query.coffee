@@ -29,7 +29,7 @@ $ ->
   }
 
   ### Utils ###
-  fold = (value) -> (none) -> (somef) ->
+  foldOpt = (value) -> (none) -> (somef) ->
     if value?
       somef(value)
     else
@@ -65,6 +65,10 @@ $ ->
   renderLighted = (runway) ->
     renderBoolean('Lighted')(runway.lighted)
 
+  renderPosition = (coords) -> """<strong><span class="text-primary">#{ol.coordinate.toStringHDMS(coords)}</span></strong>"""
+
+  renderPositionOpt = (p) -> foldOpt(p)(sym.emptySet)(renderPosition)
+
   airportLogLine = (airport) ->
     extraInfo = ->
       pre = if airport.municipality? then "in #{airport.municipality}" else "in"
@@ -75,8 +79,8 @@ $ ->
     """
 
   runwayLogLine = (runway) ->
-    length = fold(runway.length)('')((l) -> ", length: #{l}")
-    width = fold(runway.width)('')((w) -> ", width: #{w}")
+    length = foldOpt(runway.length)('')((l) -> ", length: #{l}")
+    width = foldOpt(runway.width)('')((w) -> ", width: #{w}")
     lighted = ", lighted: #{renderLighted(runway)}"
     open = ", open: #{renderOpen(runway)}"
 
@@ -88,6 +92,7 @@ $ ->
     """
       #{country.name} [#{country.code}/#{country.continent}]
     """
+
 
 ##############################################################################
   ### Logger ###
@@ -376,45 +381,76 @@ $ ->
 
     airportContent = (data, coords) ->
       a = data
-      position = ol.coordinate.toStringHDMS(coords)
-      strong = (value) -> fold(value)(sym.emptySet)((v) -> "<strong>#{v}</strong>")
-      elevation = fold(a.elevation)(sym.emptySet)((v) -> "<strong>#{v}</strong> (ft)")
+      position = renderPosition(coords)
+      strong = (value) -> foldOpt(value)(sym.emptySet)((v) -> "<strong>#{v}</strong>")
+      elevation = foldOpt(a.elevation)(sym.emptySet)((v) -> "<strong>#{v}</strong> (ft)")
       """
         <ul class="list-group box-shadow">
           <li class="list-group-item list-group-item-info">
             <span class="feature-name"><strong>#{sym.airplane} #{a.name}</strong></span>
             <span class="feature-code pull-right label label-default">#{a.ident}</span>
           </li>
-          <li class="list-group-item">Type: <strong>#{a.airportType}</strong></li>
-          <li class="list-group-item">Region: #{strong(a.isoRegion)}</li>
-          <li class="list-group-item">Municipality: #{strong(a.municipality)}</li>
-          <li class="list-group-item">Position: <strong><span class="text-primary">#{position}</span></strong></li>
-          <li class="list-group-item">Elevation: #{elevation}</li>
-          <li class="list-group-item">Scheduled Service: #{renderBoolean('Scheduled service')(a.scheduledService)}</li>
-          <li class="list-group-item">
-            GPS: #{renderOption(a.gpsCode, 'strong')} |
-            IATA: #{renderOption(a.iataCode, 'strong')} |
-            Local: #{renderOption(a.localCode, 'strong')}
-          </li>
-          <li class="list-group-item">#{renderLink(a.homeLink, "Home: #{sym.rArrow}", "Home: #{sym.emptySet}")}</li>
-          <li class="list-group-item">#{renderLink(a.wikipediaLink, "Wikipedia: #{sym.rArrow}", "Wikipedia: #{sym.emptySet}")}</li>
-          <li  class="list-group-item">Keywords: #{renderOption(a.keywords)}</li>
-        </div>
+          <li class="list-group-item popover-table-info">
+            <table class="table table-airport-info">
+              <tbody>
+                <tr>
+                  <td>Type:</td>
+                  <td colspan="3"><strong>#{a.airportType}</strong></td>
+                </tr>
+                <tr>
+                  <td>Region:</td>
+                  <td colspan="3">#{strong(a.isoRegion)}</td>
+                </tr>
+                <tr>
+                  <td>Municipality:</td>
+                  <td colspan="3">#{strong(a.municipality)}</td>
+                </tr>
+                <tr>
+                  <td>Position:</td>
+                  <td colspan="3">#{position}</td>
+                </tr>
+                <tr>
+                  <td>Elevation:</td>
+                  <td colspan="3">#{elevation}</td>
+                </tr>
+                <tr>
+                  <td>Scheduled Service:</td>
+                  <td colspan="3">#{renderBoolean('Scheduled service')(a.scheduledService)}</td>
+                </tr>
+                <tr>
+                  <td>Codes:</td>
+                  <td>GPS: #{renderOption(a.gpsCode, 'strong')}</td>
+                  <td>IATA: #{renderOption(a.iataCode, 'strong')}</td>
+                  <td>Local: #{renderOption(a.localCode, 'strong')}</td>
+                </tr>
+                <tr>
+                  <td>Links:</td>
+                  <td>#{renderLink(a.homeLink, "Home: #{sym.rArrow}", "Home: #{sym.emptySet}")}</td>
+                  <td colspan="2">#{renderLink(a.wikipediaLink, "Wikipedia: #{sym.rArrow}", "Wikipedia: #{sym.emptySet}")}</td>
+                </tr>
+                <tr>
+                  <td>Keywords:</td>
+                  <td colspan="3"#{renderOption(a.keywords)}</td>
+                </tr>
+            </tbody>
+          </table>
+        </li>
+      </ul>
       """
 
     runwayContent = (data, coords) ->
       r = data
-      lePosition = fold(r.lePosition)(sym.emptySet)((v) -> ol.coordinate.toStringHDMS(v))
-      hePosition = fold(r.hePosition)(sym.emptySet)((v) -> ol.coordinate.toStringHDMS(v))
-      strong = (value) -> fold(value)(sym.emptySet)((v) -> "<strong>#{v}</strong>")
-      length = fold(r.length)(sym.emptySet)((v) -> "<strong>#{v}</strong> (ft)")
-      width = fold(r.width)(sym.emptySet)((v) -> "<strong>#{v}</strong> (ft)")
-      leElevation = fold(r.leElevation)(sym.emptySet)((v) -> "<strong>#{v}</strong> (ft)")
-      heElevation = fold(r.heElevation)(sym.emptySet)((v) -> "<strong>#{v}</strong> (ft)")
-      leHeading = fold(r.leHeading)(sym.emptySet)((v) -> "<strong>#{v}</strong> (deg)")
-      heHeading = fold(r.heHeading)(sym.emptySet)((v) -> "<strong>#{v}</strong> (deg)")
-      leDisplacement = fold(r.leDisplacementThreshold)(sym.emptySet)((v) -> "#{v} (ft)")
-      heDisplacement = fold(r.heDisplacementThreshold)(sym.emptySet)((v) -> "#{v} (ft)")
+      lePosition = renderPositionOpt(r.lePosition)
+      hePosition = renderPositionOpt(r.hePosition)
+      strong = (value) -> foldOpt(value)(sym.emptySet)((v) -> "<strong>#{v}</strong>")
+      length = foldOpt(r.length)(sym.emptySet)((v) -> "<strong>#{v}</strong> (ft)")
+      width = foldOpt(r.width)(sym.emptySet)((v) -> "<strong>#{v}</strong> (ft)")
+      leElevation = foldOpt(r.leElevation)(sym.emptySet)((v) -> "<strong>#{v}</strong> (ft)")
+      heElevation = foldOpt(r.heElevation)(sym.emptySet)((v) -> "<strong>#{v}</strong> (ft)")
+      leHeading = foldOpt(r.leHeading)(sym.emptySet)((v) -> "<strong>#{v}</strong> (deg)")
+      heHeading = foldOpt(r.heHeading)(sym.emptySet)((v) -> "<strong>#{v}</strong> (deg)")
+      leDisplacement = foldOpt(r.leDisplacementThreshold)(sym.emptySet)((v) -> "#{v} (ft)")
+      heDisplacement = foldOpt(r.heDisplacementThreshold)(sym.emptySet)((v) -> "#{v} (ft)")
       """
         <ul class="list-group box-shadow">
           <li class="list-group-item list-group-item-info">
@@ -422,7 +458,7 @@ $ ->
             <span class="feature-code pull-right label label-default">#{renderOpen(r)} #{renderLighted(r)}</span>
           </li>
           <li class="list-group-item popover-table-info">
-            <table class="table table-runway-info">
+            <table class="table">
               <tbody>
                 <tr>
                   <td>Surface:</td>
@@ -499,13 +535,13 @@ $ ->
       feat = event.target.item(0)
       coords = feat.getGeometry().getCoordinates()
       data = feat.getProperties()
-      featFold(data)(
-        () ->
+      featFold(feat)(
+        (a) ->
           panTo(coords)(() -> showAirportPopup(data, coords))
           if noNotify == false
             for cb in airportCallbacks
               cb(data)
-        () ->
+        (r) ->
           panTo(coords)(() -> showRunwayPopup(data, coords))
           if noNotify == false
             for cb in runwayCallbacks
@@ -635,6 +671,7 @@ $ ->
 
     unselect = () ->
       $("##{target} tbody tr.selected").removeClass('selected active')
+      ### TODO: callback, unselect in map!! ###
 
     select = (id) ->
       noNotify = true
@@ -660,6 +697,7 @@ $ ->
 
     update = (data) ->
       dataTable.clear()
+      dataTable.search("")
       dataTable.rows.add(data).draw(true)
 
     search = (query) ->
