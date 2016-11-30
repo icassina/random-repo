@@ -1,9 +1,9 @@
-@(topId: Seq[RunwayIdentsCount])
+@()
 <div class="panel panel-primary">
   <div class="panel-heading">
     <h4>Most common runway identifiers</h4>
   </div>
-  <table class="table table-condensed">
+  <table id="runway-idents-top-10" class="table table-condensed table-striped table-hover hover">
     <thead>
       <tr>
         <th>Identifier</th>
@@ -11,12 +11,6 @@
       </tr>
     </thead>
     <tbody>
-    @topId.map { case RunwayIdentsCount(ident, count) =>
-      <tr>
-        <td><b>@ident</b></td>
-        <td><b>@count</b></td>
-      </tr>
-    }
     </tbody>
   </table>
 </div>

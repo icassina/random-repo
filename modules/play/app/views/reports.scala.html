@@ -1,24 +1,28 @@
-@(top10: Seq[AirportsCountByCountry],
-  low10: Seq[AirportsCountByCountry],
-  surf: Seq[RunwaySurfacesCountByCountry],
+@(surf: Seq[RunwaySurfacesCountByCountry],
   topId: Seq[RunwayIdentsCount]
-)(wsuri: String)
+)
 
-@main("Lunatech Assignment - Reports", wsuri) {
+@main("Lunatech Assignment - Reports",
+  scripts = List(
+    "lib/jquery/jquery.js",
+    "lib/datatables/js/jquery.dataTables.js"
+  )
+) {
+  <script src="@routes.Assets.versioned("js/reports.js")" type="application/javascript"></script>
   <div class="row">
     <div class="col-md-6">
-      @country_airports_panel("Countries having most airports", top10)
+      @country_airports_panel("Countries having most airports", "countries-top-10")
     </div>
     <div class="col-md-6">
-      @country_airports_panel("Countries having less airports", low10)
+      @country_airports_panel("Countries having less airports", "countries-low-10")
     </div>
   </div>
   <div class="row">
     <div class="col-md-10">
-      @surface_identifiers_panel(surf)
+      @surface_identifiers_panel()
     </div>
     <div class="col-md-2">
-      @runway_identifiers_panel(topId)
+      @runway_identifiers_panel()
     </div>
   </div>
 }

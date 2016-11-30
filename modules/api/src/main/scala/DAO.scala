@@ -16,7 +16,7 @@ trait DAO {
   def runwaysByCountry(countryCode: String)(implicit ec: DAOExecutionContext): Future[Option[RunwaysByCountry]]
   def allAirportsByCountry(implicit ec: DAOExecutionContext): Future[Seq[AirportsCountByCountry]]
   def topTenCountries(implicit ec: DAOExecutionContext): Future[Seq[AirportsCountByCountry]]
-  def bottomTenCountries(implicit ec: DAOExecutionContext): Future[Seq[AirportsCountByCountry]]
+  def lowTenCountries(implicit ec: DAOExecutionContext): Future[Seq[AirportsCountByCountry]]
   def airportsAndRunwaysByCountry(implicit ec: DAOExecutionContext): Future[Seq[AirportsAndRunwaysCountByCountry]]
   def runwaySurfacesByCountry(implicit ec: DAOExecutionContext): Future[Seq[RunwaySurfacesCountByCountry]]
   def topRunwayIdents(implicit ec: DAOExecutionContext): Future[Seq[RunwayIdentsCount]]

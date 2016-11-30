@@ -74,7 +74,7 @@ class SlickDAO @Inject()(db: Database) extends DAO with Tables {
   def topTenCountries(implicit ec: DAOExecutionContext): Future[Seq[AirportsCountByCountry]] =
     db.run(queries.countAirportsByCountry.sortBy(_._2.desc).take(10).result.map(_.map(AirportsCountByCountry.tupled)))
 
-  def bottomTenCountries(implicit ec: DAOExecutionContext): Future[Seq[AirportsCountByCountry]] =
+  def lowTenCountries(implicit ec: DAOExecutionContext): Future[Seq[AirportsCountByCountry]] =
     db.run(queries.countAirportsByCountry.sortBy(_._2.asc).take(10).result.map(_.map(AirportsCountByCountry.tupled)))
 
   def airportsAndRunwaysByCountry(implicit ec: DAOExecutionContext): Future[Seq[AirportsAndRunwaysCountByCountry]] =

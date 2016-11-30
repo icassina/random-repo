@@ -20,25 +20,21 @@ class UI @Inject() (dao: DAO, daoEC: DAOExecutionContext, actorSystem: ActorSyst
   implicit val as: ActorSystem = actorSystem
   implicit val mr: Materializer = m
 
-  private def wsuri(implicit req: Request[_]) = routes.UI.ws.webSocketURL(false)
-
   def index = Action.async { implicit request =>
-    dao.stats.map(stats => Ok(views.html.index(stats)(wsuri)))
+    dao.stats.map(stats => Ok(views.html.index(stats)))
   }
 
   def reports = Action.async { implicit request =>
     for {
-      top10 <- dao.topTenCountries
-      low10 <- dao.bottomTenCountries
       surf  <- dao.runwaySurfacesByCountry
       topId <- dao.topRunwayIdents
     } yield {
-      Ok(views.html.reports(top10, low10, surf, topId)(wsuri))
+      Ok(views.html.reports(surf, topId))
     }
   }
 
   def query = Action { implicit request =>
-    Ok(views.html.query()(wsuri))
+    Ok(views.html.query())
   }
 
   def ws = WebSocket.accept[JsValue, JsValue] { implicit request =>

@@ -54,4 +54,20 @@ class API @Inject() (dao: DAO, daoEC: DAOExecutionContext) extends Controller {
       runways.fold[Result](NotFound)(runways => Ok(Json.toJson(RunwaysByCountryFeatures(runways))))
     )
   }
+
+  def countriesAirportsTop10 = Action.async {
+    dao.topTenCountries.map(top10 => Ok(Json.obj("data" -> Json.toJson(top10))))
+  }
+
+  def countriesAirportsLow10 = Action.async {
+    dao.lowTenCountries.map(low10 => Ok(Json.obj("data" -> Json.toJson(low10))))
+  }
+
+  def runwaySurfaces = Action.async {
+    dao.runwaySurfacesByCountry.map(surf => Ok(Json.obj("data" -> Json.toJson(surf))))
+  }
+
+  def runwayIdentsTop10 = Action.async {
+    dao.topRunwayIdents.map(top10 => Ok(Json.obj("data" -> Json.toJson(top10))))
+  }
 }

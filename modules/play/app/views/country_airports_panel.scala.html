@@ -1,32 +1,23 @@
-@(title: String, rank: Seq[AirportsCountByCountry])
+@(title: String, tableId: String)
 <div class="panel panel-primary">
   <div class="panel-heading">
     <h4>@title</h4>
   </div>
-  <table class="table table-condensed">
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Code</th>
-        <th>Name</th>
-        <th>Airports</th>
-        <th>Continent</th>
-        <th>Wikipedia</th>
-        <th>Keywords</th>
-      </tr>
-    </thead>
-    <tbody>
-    @rank.map { case AirportsCountByCountry(country, airports) =>
-      <tr>
-        <td>@country.id</td>
-        <td>@country.code</td>
-        <td><b>@country.name</b></td>
-        <td><b>@airports</b></td>
-        <td>@country.continent</td>
-        <td><a href="@country.wikipediaLink">@country.wikipediaLink</a></td>
-        <td>@country.keywords</td>
-      </tr>
-    }
-    </tbody>
-  </table>
+  <div class="panel-body">
+    <table id="@tableId" class="table table-condensed table-hover hover table-striped">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Code</th>
+          <th>Name</th>
+          <th>Airports</th>
+          <th>Continent</th>
+          <th>Wikipedia</th>
+          <th>Keywords</th>
+        </tr>
+      </thead>
+      <tbody>
+      </tbody>
+    </table>
+  </div>
 </div>

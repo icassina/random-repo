@@ -1,4 +1,4 @@
-@(title: String, wsuri: String, css: List[String] = List.empty, scripts: List[String] = List.empty)(content: Html)
+@(title: String, css: List[String] = List.empty, scripts: List[String] = List.empty)(content: Html)
 
 <!DOCTYPE html>
 
@@ -17,7 +17,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   </head>
   <body>
-    <div class="hidden" id="ws-config" data-wsuri="@wsuri"></div>
     @navbar()
     <div class="container-fluid">
       @content

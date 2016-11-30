@@ -1,11 +1,11 @@
-@(rank: Seq[RunwaySurfacesCountByCountry])
+@()
 <div class="panel panel-primary">
   <div class="panel-heading">
     <h4>
     Most common used runway surfaces identifiers
     </h4>
   </div>
-  <table class="table table-condensed">
+  <table id="runway-surfaces" class="table table-condensed table-striped table-hover hover">
     <thead>
       <tr>
         <th>Surface</th>
@@ -13,24 +13,12 @@
         <th>Code</th>
         <th>Name</th>
         <th>Continent</th>
-        <th>Country ID</th>
+        <th>ID</th>
         <th>Wikipedia</th>
         <th>Keywords</th>
       </tr>
     </thead>
     <tbody>
-    @rank.map { case RunwaySurfacesCountByCountry(country, surface, runways) =>
-      <tr>
-        <td><b>@surface</b></td>
-        <td><b>@runways</b></td>
-        <td>@country.code</td>
-        <td>@country.name</td>
-        <td>@country.continent</td>
-        <td>@country.id</td>
-        <td><a href="@country.wikipediaLink">@country.wikipediaLink</a></td>
-        <td>@country.keywords</td>
-      </tr>
-    }
     </tbody>
   </table>
 </div>

@@ -20,5 +20,10 @@ GET     /api/runways/:countryCode           controllers.API.runways(countryCode:
 GET     /api/airports/:countryCode/geojson  controllers.API.airportsGeoJSON(countryCode: String)
 GET     /api/runways/:countryCode/geojson   controllers.API.runwaysGeoJSON(countryCode: String)
 
+GET     /api/reports/countries/top10        controllers.API.countriesAirportsTop10
+GET     /api/reports/countries/low10        controllers.API.countriesAirportsLow10
+GET     /api/reports/runways/surfaces       controllers.API.runwaySurfaces
+GET     /api/reports/runways/idents/top10   controllers.API.runwayIdentsTop10
+
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.versioned(path="/public", file: Asset)
