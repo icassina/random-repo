@@ -138,18 +138,18 @@ The table contains the 10 most popular occurrences, ordered by popularity.
 
 The most interactive page.
 
-You'll notice that the bavigation bar has been augmented with a search box and
-a submit button, and a misterious light blue and gray area on the right side.
-The search box should be glowing blue. An indication that it is the starting
-point of the interaction.
+You'll notice that the navigation bar has been augmented with a __search box__
+and a submit button, and a misterious light blue and gray area on the right
+side.  The search box should be glowing blue. An indication that it is the
+starting point of the interaction.
 
 Other elements in the pages are:
 
-* a map, on the upper-right side, centered on Europe (if you zoom in, you'll
+* a __map__, on the upper-right side, centered on Europe (if you zoom in, you'll
   notice that Netherland is in the center);
-* a black-ish area on the bommo-left side, showing two entries, one in green,
-  the other in blue. It shows some logs;
-* two empty tables labeled "Airports" and "Runways" in the upper-left and
+* a black-ish area on the bottom-left side, showing two entries, one in green,
+  the other in blue. It shows some __logs__;
+* two empty tables labeled "__Airports__" and "__Runways__" in the upper-left and
   bottom-right corners respectively.
 
 #### Search country
@@ -180,7 +180,7 @@ It then populates the map and the two tables with airports and runways.
 ##### Fuzzy Search
 
 If the text entered in the search box does not match anything known by the
-client (i.e. it is mispelled), the reuquest will be slightly different.
+client (i.e. it is mispelled), the request will be slightly different.
 Let's say we mispelled Netherlands as 'neitherlamd'
 
 ```
@@ -196,7 +196,7 @@ Of course, random text won't find anything useful:
 
 ```
 -> GET /api/country/fuzzy/randomtext
-<- GET /api/country/fuzzy/randomtext: error: Not Found
+<- GET /api/country/fuzzy/randomtext error: Not Found
 ```
 
 #### The Airports table
@@ -208,13 +208,13 @@ airports belong to, in this example it shows:
 
 It also display one airport per row, with the following columns:
 
-* Ident
-* Name
-* Type
-* Region
-* Municipality
-* Elevation
-* Codes (GPS, IATA, Local)
+* __Ident__
+* __Name__
+* __Type__
+* __Region__
+* __Municipality__
+* __Elevation__ (in feet)
+* __Codes__ (GPS, IATA, Local)
 
 You can scroll down to look for more entries, or use the search box in the
 upper right corner of the table to filter the results. Clicking on a column
@@ -225,17 +225,17 @@ header will sort the data according to that column.
 Like the Airports table, it displays in the title which country the runways belong to.
 
 The information shown by this table is:
-* Airport (its Ident)
-* Idents
-* Surface
-* Dimensions (Length and Width)
-* Open (green/check is yes, red/cross is no)
-* Lighted (green/check is yes, red/cross is no)
-* Headings ("le" and "he", in degrees from true north)
-* Elevations ("le" and "he", in feet)
-* Displaced Threshold ("le" and "he", in feet)
+* __Airport__ (its Ident)
+* __Idents__ ("le" and "he")
+* __Surface__
+* __Dimensions__ (Length and Width)
+* __Open__ (green/check is yes, red/cross is no)
+* __Lighted__ (green/check is yes, red/cross is no)
+* __Headings__ ("le" and "he", in degrees from true north)
+* __Elevations__ ("le" and "he", in feet)
+* __Displaced Threshold__ ("le" and "he", in feet)
 
-Like the Airports table, you can scroll and search and reorder the table.
+Like the Airports table, you can scroll, search and reorder the table.
 
 
 #### The Map
@@ -255,26 +255,26 @@ fit within the map.
 
 Legend:
 * Circle:
-  * grey, very small: balloonport
-  * blue, very small: seaplane base
-  * pink, small: small airport
-  * orange, medium: medium airport
-  * green, large: large airport
+  * grey, very small: __balloonport__
+  * blue, very small: __seaplane base__
+  * pink, small: __small airport__
+  * orange, medium: __medium airport__
+  * green, large: __large airport__
 * Plus:
-  * brown, small: heliport
+  * brown, small: __heliport__
 * Cross:
-  * dark grey, very small: closed airport
-  * dark blue, very small: closed runway
+  * dark grey, very small: __closed airport__
+  * dark blue, very small: __closed runway__
 * Triangle:
-  * blue, medium: open and not lighted runway
+  * blue, medium: __open and not lighted runway__
 * Square:
-  * yellow, medium: open and lighted runway
+  * yellow, medium: __open and lighted runway__
 
 
 Holding the mouse's left button and moving it withing the map will move the
-map.  Clicking on a marker will select it and show the full information on a
-popup next to the marker.  Selecting a marker will also select it on the
-relevant table (airports or runways).  Clicking anywhere on the map will remove
+map. Clicking on a marker will select it and show the full information on a
+popup next to the marker. Selecting a marker will also select it on the
+relevant table (airports or runways). Clicking anywhere on the map will remove
 the popup and unselect it on the respective table.
 
 When passing over a marker with the mouse, some information will be shown in
@@ -284,7 +284,7 @@ and it's ident in the grey area.  On runways, it will show an upper arrow and
 the runways idents (le | he) in the blue area and it's status (open | lighted)
 in the grey area.
 
-You will notice that the country search box and the information area will
+You will notice that the country search box and the __information area__ will
 appear in the fullscreen version of the map as well.
 
 #### More interactions
@@ -303,13 +303,12 @@ remove the popup information in the map.
 
 Likewise, clicking on a row will select the corresponding marker on the map…
 except that many runways do not have any position information and are not shown
-on the map. To still be able to view the full information, a temporary marker
-will appear at the same position as the airport of that runway, and the popup
-will appear next to it. Unselecting the runway will make the marker disappear
-again.
+on the map. In order to still being able to view the full information, a
+temporary marker will appear at the same position as the airport of that
+runway, and the popup will appear next to it. Unselecting the runway will make
+the marker disappear again.
 
 
 Enjoy and profit!
 -----------------
-
 
