@@ -21,6 +21,7 @@ root.Query = (config) ->
   queryForm = $('#query-form')
   queryInput = $('#query-input')
   querySubmit = $('#query-submit')
+  queryInputFuzzy = undefined
   selector = undefined
   lastQuery = undefined
   afterCallbacks = []
@@ -28,25 +29,40 @@ root.Query = (config) ->
 
   logger = config.logger
 
+  select = (countryCode) ->
+    selector.setValue(countryCode, true)
+
+  queryUrl = (queryStr) ->
+    if queryStr.length == 2
+      if queryStr != lastQuery
+        urls.country(queryStr)
+      else
+        undefined
+    else
+      input = queryInputFuzzy.val()
+      if input.length > 2 and input != lastQuery
+        urls.countryFuzzy(input)
+      else
+        undefined
+    
   sendQuery = (queryStr) ->
-    if queryStr != lastQuery
-      if queryStr.length >= 2
-        lastQuery = queryStr
-        url = urls.country(queryStr)
-        for cb in beforeCallbacks
-          cb()
-        logger.out(url)
-        $.ajax(url, {
-          type: 'GET'
+    url = queryUrl(queryStr)
+    if url?
+      for cb in beforeCallbacks
+        cb()
+      logger.out(url)
+      $.ajax(url, {
+        type: 'GET'
 
-          error: (jqXHR, status, error) ->
-            logger.err(url, status, error)
+        error: (jqXHR, status, error) ->
+          logger.err(url, status, error)
 
-          success: (data, status, jqXHR) ->
-            logger.in(url)
-            for cb in afterCallbacks
-              cb(data)
-        })
+        success: (data, status, jqXHR) ->
+          logger.in(url)
+          select(data.code)
+          for cb in afterCallbacks
+            cb(data)
+      })
 
   setup = (countries) ->
     selector = queryInput.selectize({
@@ -58,6 +74,7 @@ root.Query = (config) ->
       preload: false
       persist: false
     })
+    queryInputFuzzy = $('#query-input-selectized')
     selector = selector[0].selectize
     selector.on('change', () ->
       sendQuery(queryInput.val())
