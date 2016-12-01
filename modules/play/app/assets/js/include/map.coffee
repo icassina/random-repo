@@ -224,11 +224,9 @@ root.Map = () ->
 
   map = new ol.Map({
     target: 'map'
-    controls: ol.control.defaults({
-      attributionOptions: {
-        collapsible: false
-      }
-    })
+    controls: ol.control.defaults().extend([
+      new ol.control.FullScreen()
+    ])
   })
   map.addLayer(osmTiles)
   map.addLayer(airportsLayer)
@@ -385,6 +383,7 @@ root.Map = () ->
     runwaysSource.clear()
     runwaysSource.addFeatures(geoJSON.readFeatures(features))
 
+  map.updateSize()
   $('#map-hover-container').removeClass('hidden')
 
   {

@@ -16,11 +16,23 @@
   text-overflow: ellipsis;
 }
 
+#top-row {
+  height: 46vh;
+}
+
+#map-container {
+  height: 44vh;
+}
+
+#airports-container {
+  height: 44vh;
+  background-color: black;
+}
+
 #map {
   width: 100%;
   height: 100%;
-  border-radius: @border-radius-base;
-  > .ol-viewport > canvas.ol-unselectable {
+  > .ol-viewport  {
     border-radius: @border-radius-base;
     border: 1px solid @brand-primary;
   }

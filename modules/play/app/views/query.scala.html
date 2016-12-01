@@ -27,14 +27,18 @@
   )
 ) {
   <script src="@routes.Assets.versioned("js/query.js")" type="application/javascript"></script>
-  <div class="row">
+  <div id="top-row" class="row">
     <div class="col-md-6">
-      @airports_table()
+      <div id="airports-container">
+        @airports_table()
+      </div>
     </div>
     <div class="col-md-6">
-      <div id="map"></div>
-      <div style="display: none;">
-        <div id="query-info-box"></div>
+      <div id="map-container">
+        <div id="map"></div>
+        <div style="display: none;">
+          <div id="query-info-box"></div>
+        </div>
       </div>
     </div>
   </div>

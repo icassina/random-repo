@@ -125,7 +125,7 @@ root.AirportsResults = (config) ->
   tableResults = TableResults({
     logger: config.logger
     target: 'airports-results-table'
-    height: '25vh'
+    height: '27.3vh'
     select: true
     rowId: idFn
     columns: [
