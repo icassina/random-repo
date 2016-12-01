@@ -14,13 +14,18 @@ root = requires ? this
 # <- ()
 #   
 # ->
-#   updateAirports:     (airports) ->
-#   updateRunways:      (runways) ->
-#   onAirportSelected:  ((airport) -> ) ->
-#   onRunwaysSelected:  ((runway) -> ) ->
-#   selectAirport:      (airport) ->
-#   selectRunway:       (runway) ->
-#   unselect:           () ->
+#   updateAirports:       (airports) ->
+#   updateRunways:        (runways) ->
+#   onAirportSelected:    ((airport) -> ) ->
+#   onAirportUnselected:  ((airport) -> ) ->
+#   onRunwaySelected:     ((runway) -> ) ->
+#   onRunwayUnselected:   ((runway) -> ) ->
+#   onFullscreen:         (() -> ) ->
+#   afterFullscreen:      (() -> ) ->
+#   selectAirport:        (airport) ->
+#   selectRunway:         (runway) ->
+#   unselect:             () ->
+#   overlayContainer:     $element
 ###
 root.Map = () ->
   noNotify = false
@@ -32,10 +37,20 @@ root.Map = () ->
     selected: []
     unselected: []
   }
+  fullscreenCallbacks = {
+    fullscreen: []
+    after: []
+  }
   ghostRunway = undefined
+  isFullScreen = false
 
-  mapHoverCode = $('#map-hover-code')
-  mapHoverInfo = $('#map-hover-info')
+  mapHoverContainer   = $('#map-hover-container')
+  mapHover            = $('#map-hover')
+  mapHoverCode        = $('#map-hover-code')
+  mapHoverInfo        = $('#map-hover-info')
+  mapOver             = $('#map-over')
+  mapHidden           = $('#map-hidden')
+  mapOverlayContainer = () -> $('.ol-overlaycontainer')
 
   mkColor = (alpha) -> (e) -> "rgba(#{e.r}, #{e.g}, #{e.b}, #{alpha})"
 
@@ -226,17 +241,17 @@ root.Map = () ->
     positioning: 'bottom-right'
   })
 
+  fullScreen = new ol.control.FullScreen()
+
   map = new ol.Map({
     target: 'map'
-    controls: ol.control.defaults().extend([
-      new ol.control.FullScreen()
-    ])
   })
   map.addLayer(osmTiles)
   map.addLayer(airportsLayer)
   map.addLayer(runwaysLayer)
   map.addOverlay(popup)
   map.setView(view)
+  map.addControl(fullScreen)
 
   map.getInteractions().extend([
     hoverInteraction
@@ -403,7 +418,22 @@ root.Map = () ->
     observers.push(cb)
     this
 
-  $('#map-hover-container').removeClass('hidden')
+  root.addEventListener('webkitfullscreenchange', (event) ->
+    isFullScreen = ! isFullScreen
+    if isFullScreen
+      overlayContainer = mapOverlayContainer()
+      mapHover.appendTo(mapOver)
+      for cb in fullscreenCallbacks.fullscreen
+        cb(mapOver)
+      mapOver.appendTo(overlayContainer)
+    else
+      mapHover.appendTo(mapHoverContainer)
+      for cb in fullscreenCallbacks.after
+        cb()
+      mapOver.appendTo(mapHidden)
+  )
+
+  mapHover.removeClass('hidden')
 
   {
     updateAirports:       updateAirports
@@ -412,6 +442,8 @@ root.Map = () ->
     onAirportUnselected:  registerCallback(airportCallbacks.unselected)
     onRunwaySelected:     registerCallback(runwayCallbacks.selected)
     onRunwayUnselected:   registerCallback(runwayCallbacks.unselected)
+    onFullscreen:         registerCallback(fullscreenCallbacks.fullscreen)
+    afterFullscreen:      registerCallback(fullscreenCallbacks.after)
     selectAirport:        select('airport')
     selectRunway:         select('runway')
     unselect:             unselect

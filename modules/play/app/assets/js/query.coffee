@@ -89,6 +89,12 @@ Controller = (config) ->
     .onRunwayUnselected((runway) ->
       runwaysResults.unselect()
     )
+    .onFullscreen((mapOverlayContainer) ->
+      query.form.appendTo(mapOverlayContainer)
+    )
+    .afterFullscreen(() ->
+      query.form.appendTo(query.formContainer)
+    )
 
   airportsResults
     .onSelectRow((airport) ->

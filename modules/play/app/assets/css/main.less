@@ -54,6 +54,23 @@
   border-radius: @border-radius-base;
   border: 1px solid @list-group-border;
 }
+
+.ol-overlaycontainer #map-over {
+  position: absolute;
+  width: 100%;
+  height: 60px;
+  top: 0px;
+  left: 0px;
+  background-color: rgba(50, 50, 50, 0.4);
+  > #map-hover {
+    margin-right: 60px;
+  }
+  > #query-form {
+    margin-left: 40px;
+  }
+}
+
+
 #map-hover-info {
   line-height: 20px;
   text-align: left;

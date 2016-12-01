@@ -13,8 +13,11 @@ root = exports ? this
 # -> 
 #   beforeRequest:  (() -> ) ->
 #   afterRequest:   ((country) -> ) ->
+#   form:           $element
+#   formContainer:  $element
 ###
 root.Query = (config) ->
+  queryFormContainer = $('#query-form-container')
   queryForm = $('#query-form')
   queryInput = $('#query-input')
   querySubmit = $('#query-submit')
@@ -80,6 +83,8 @@ root.Query = (config) ->
   })
 
   {
-    beforeRequest: (cb) -> beforeCallbacks.push(cb)
+    beforeRequest:    (cb) -> beforeCallbacks.push(cb)
     onCountryResults: (cb) -> afterCallbacks.push(cb)
+    form:             queryForm
+    formContainer:    queryFormContainer
   }
