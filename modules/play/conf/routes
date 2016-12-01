@@ -7,9 +7,6 @@ GET     /                                   controllers.UI.index
 GET     /reports                            controllers.UI.reports
 GET     /query                              controllers.UI.query
 
-# WebSocket
-GET     /ws                                 controllers.UI.ws
-
 # JSON
 GET     /api/stats                          controllers.API.stats
 GET     /api/countries                      controllers.API.countries
