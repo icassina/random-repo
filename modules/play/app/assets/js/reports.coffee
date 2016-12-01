@@ -1,76 +1,78 @@
 $ ->
 
-  strong = (v) -> "<strong>#{v}</strong>"
-
-  link = (a) -> """<a target="_blank" href="#{a}">#{a}</a>"""
-
-  console.log("loading countries-top-10")
-
   countriesColumns = [
     { data: 'country.id' }
-    { data: 'country.code',           render: strong }
-    { data: 'country.name',           render: strong }
-    { data: 'airports',               render: strong }
+    { data: 'country.code',           render: render.strong }
+    { data: 'country.name',           render: render.strong }
+    { data: 'airports',               render: render.strong }
     { data: 'country.continent' }
-    { data: 'country.wikipedia_link', render: link }
+    { data: 'country.wikipedia_link', render: (a) -> render.link(a, a, symbols.emptySet) }
     { data: 'country.keywords' }
   ]
 
   ct10 = $('#countries-top-10').DataTable({
-    ajax:             '/api/reports/countries/top10'
+    ajax:             urls.reports.countriesTop10
+    scrollY:          '32vh'
     sScrollY:         '32vh'
     bScrollCollapse:  false
     scrollCollapse:   false
-    paging:           false
+    paging:           true
     scroller:         true
+    deferRender:      true
     bFilter:          false
     order:            [[3, 'desc'], [2, 'asc']]
     columns:          countriesColumns
   })
 
   cl10 = $('#countries-low-10').DataTable({
-    ajax: '/api/reports/countries/low10'
+    ajax:             urls.reports.countriesLow10
+    scrollY:          '32vh'
     sScrollY:         '32vh'
     bScrollCollapse:  false
     scrollCollapse:   false
-    paging:           false
+    paging:           true
     scroller:         true
+    deferRender:      true
     bFilter:          false
     order:            [[3, 'asc'], [2, 'asc']]
     columns:          countriesColumns
   })
       
   $('#runway-idents-top-10').DataTable({
-    ajax:             '/api/reports/runways/idents/top10'
+    ajax:             urls.reports.runwaysIdentsTop10
+    scrollY:          '30vh'
     sScrollY:         '30vh'
     bScrollCollapse:  false
     scrollCollapse:   false
-    paging:           false
+    paging:           true
     scroller:         true
+    deferRender:      true
     bFilter:          false
     order:            [[1, 'desc'], [0, 'asc']]
     columns:          [
-      { data: "ident",    render: strong }
-      { data: "runways",  render: strong }
+      { data: "ident",    render: render.strong }
+      { data: "runways",  render: render.strong }
     ]
   })
 
   $('#runway-surfaces').DataTable({
-    ajax:             '/api/reports/runways/surfaces'
+    ajax:             urls.reports.runwaysSurfaces
+    scrollY:          '27vh'
     sScrollY:         '27vh'
     bScrollCollapse:  false
     scrollCollapse:   false
-    paging:           false
+    paging:           true
     scroller:         true
+    deferRender:      true
     order:            [[1, 'desc'], [0, 'asc'], [2, 'asc']]
     columns:          [
-      { data: "surface",                render: strong }
-      { data: "runways",                render: strong }
-      { data: "country.code",           render: strong }
-      { data: "country.name",           render: strong }
+      { data: "surface",                render: render.strong }
+      { data: "runways",                render: render.strong }
+      { data: "country.code",           render: render.strong }
+      { data: "country.name",           render: render.strong }
       { data: "country.continent" }
       { data: "country.id" }
-      { data: "country.wikipedia_link", render: link }
+      { data: "country.wikipedia_link", render: (a) -> render.link(a, a, symbols.emptySet) }
       { data: "country.keywords" }
     ]
   })

@@ -17,6 +17,12 @@ root.urls = do () ->
       extra = if suffix? then "/#{suffix}" else ""
       "#{runwaysBaseUrl}/#{countryCode}#{extra}"
 
+    reports = {
+      countriesTop10:     '/api/reports/countries/top10'
+      countriesLow10:     '/api/reports/countries/low10'
+      runwaysIdentsTop10: '/api/reports/runways/idents/top10'  
+      runwaysSurfaces:    '/api/reports/runways/surfaces'
+    }
 
     {
       countries:      countriesUrl
@@ -27,5 +33,7 @@ root.urls = do () ->
       country:        countryUrl
       airports:       airportsUrl
       runways:        runwaysUrl
+
+      reports:        reports
     }
 

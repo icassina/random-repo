@@ -5,7 +5,7 @@ object AirportTypes extends Enumeration {
   val balloonport, closed, heliport, large_airport, medium_airport, seaplane_base, small_airport = Value
 
   def fromString(s: String): AirportType = s.toLowerCase match {
-    case "ballonport"     => balloonport
+    case "balloonport"     => balloonport
     case "closed"         => closed
     case "heliport"       => heliport
     case "large_airport"  => large_airport

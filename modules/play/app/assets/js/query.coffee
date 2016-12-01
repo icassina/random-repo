@@ -13,10 +13,10 @@
 Controller = (config) ->
   logger = config.logger
 
-  map               = Map(config)
   query             = Query(config)
   airportsResults   = AirportsResults(config)
   runwaysResults    = RunwaysResults(config)
+  map               = Map(config)
 
   fetchAirports = (countryCode) ->
     url = urls.airports(countryCode, 'geojson')
@@ -61,24 +61,11 @@ Controller = (config) ->
     fetchRunways(country.code)
   )
 
-  ### Airport selected ###
   airportSelected = (airport) ->
     logger.info(render.airport.logLine(airport))
     runwaysResults.unselect()
     runwaysResults.search(airport.ident)
 
-  # selected from table -> select on map
-  airportsResults.onSelectRow((airport) ->
-    airportSelected(airport)
-    map.selectAirport(airport)
-  )
-  # selected from map -> select on table
-  map.onAirportSelected((airport) ->
-    airportSelected(airport)
-    airportsResults.selectAirport(airport)
-  )
-
-  ### Runway selected ###
   runwaySelected = (runway) ->
     logLine = render.runway.logLine(runway)
     if runway.lePosition? or runway.hePosition?
@@ -87,19 +74,37 @@ Controller = (config) ->
       logger.warn("#{logLine}: runway position not found!")
     airportsResults.unselect()
 
-  # selected from table -> select on map
-  runwaysResults.onSelectRow((runway) ->
-    runwaySelected(runway)
-    map.selectRunway(runway)
+  # airport selected from map -> select on table
+  map.onAirportSelected((airport) ->
+    airportSelected(airport)
+    airportsResults.selectAirport(airport)
   )
-  # selected from map -> select on table
+  # runway selected from map -> select on table
   map.onRunwaySelected((runway) ->
     runwaySelected(runway)
     runwaysResults.selectRunway(runway)
   )
 
+  airportsResults
+    .onSelectRow((airport) ->
+      airportSelected(airport)
+      map.selectAirport(airport)
+    )
+    .onUnselectRow((airport) ->
+      runwaysResults.search("")
+      map.unselect()
+    )
+
+  runwaysResults
+    .onSelectRow((runway) ->
+      runwaySelected(runway)
+      map.selectRunway(runway)
+    )
+    .onUnselectRow((runway) ->
+      map.unselect()
+    )
 
 ### Initialization ###
 $ -> 
-  logger = Logger({maxLogLines: 13})
+  logger = Logger({maxLogLines: 15})
   controller = Controller({logger: logger})

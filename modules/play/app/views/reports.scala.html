@@ -3,9 +3,19 @@
 )
 
 @main("Lunatech Assignment - Reports",
+  css = List(
+    "lib/datatable.net-bs/css/dataTables.bootstrap.css"
+  ),
   scripts = List(
     "lib/jquery/jquery.js",
-    "lib/datatables/js/jquery.dataTables.js"
+    "lib/datatables.net/js/jquery.dataTables.js",
+    "lib/datatables.net-bs/js/dataTables.bootstrap.js",
+    "lib/datatables.net-scroller/js/dataTables.scroller.js"
+  ) ++ List(
+    "js/include/symbols.js",
+    "js/include/urls.js",
+    "js/include/utils.js",
+    "js/include/render.js"
   )
 ) {
   <script src="@routes.Assets.versioned("js/reports.js")" type="application/javascript"></script>

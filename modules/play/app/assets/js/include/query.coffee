@@ -50,7 +50,7 @@ root.Query = (config) ->
       maxItems: 1
       labelField: 'name'
       valueField: 'code'
-      searchField: ['code', 'name', 'keywords']
+      searchField: ['name', 'code', 'keywords']
       options: countries
       preload: false
       persist: false

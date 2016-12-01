@@ -2,16 +2,20 @@
 @main("Lunatech Assignment - Query",
   css = List(
     "lib/openlayers/ol.css",
-    "lib/selectize.js/css/selectize.bootstrap3.css"
+    "lib/selectize.js/css/selectize.bootstrap3.css",
+    "lib/datatables.net-bs/css/dataTables.bootstrap.css"
   ),
   scripts = List(
     "lib/openlayers/ol.js",
     "lib/jquery/jquery.js",
-    "lib/selectize.js/js/standalone/selectize.js",
-    "lib/datatables/js/jquery.dataTables.js",
     "lib/bootstrap/js/tooltip.js",
     "lib/bootstrap/js/popover.js",
-    "lib/jquery.scrollTo/jquery.scrollTo.js",
+    "lib/selectize.js/js/standalone/selectize.js",
+    "lib/datatables.net/js/jquery.dataTables.js",
+    "lib/datatables.net-bs/js/dataTables.bootstrap.js",
+    "lib/datatables.net-scroller/js/dataTables.scroller.js",
+    "lib/datatables.net-select/js/dataTables.select.js"
+  ) ++ List(
     "js/include/symbols.js",
     "js/include/utils.js",
     "js/include/urls.js",
@@ -22,28 +26,27 @@
     "js/include/query.js"
   )
 ) {
-  <script src="@routes.Assets.versioned("js/test.js")" type="application/javascript"></script>
+  <script src="@routes.Assets.versioned("js/query.js")" type="application/javascript"></script>
   <div class="row">
-    <div class="col-md-5">
+    <div class="col-md-6">
       @airports_table()
     </div>
-    <div class="col-md-7">
+    <div class="col-md-6">
       <div id="map"></div>
       <div style="display: none;">
-        <div id="query-info-box">
-        </div>
+        <div id="query-info-box"></div>
       </div>
     </div>
   </div>
   <div class="row">
+    <div class="col-md-7">
+      @runways_table()
+    </div>
     <div class="col-md-5">
       <div class="panel panel-success">
         <div class="panel-body" id="query-log-area">
         </div>
       </div>
-    </div>
-    <div class="col-md-7">
-      @runways_table()
     </div>
   </div>
 }

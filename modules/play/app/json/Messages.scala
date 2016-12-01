@@ -46,6 +46,7 @@ object Messages {
       "gpsCode"           -> d.gpsCode,
       "iataCode"          -> d.iataCode,
       "localCode"         -> d.localCode,
+      "codes"             -> Seq(d.gpsCode, d.iataCode, d.localCode),
       "homeLink"          -> d.homeLink,
       "wikipediaLink"     -> d.wikipediaLink,
       "keywords"          -> d.keywords,
@@ -73,6 +74,11 @@ object Messages {
       "heElevation"           -> d.heElevation,
       "heHeading"             -> d.heHeading,
       "heDisplacedThreshold"  -> d.heDisplacedThreshold,
+      "ident"                 -> Seq(d.leIdent, d.heIdent),
+      "dimensions"            -> Seq(d.length, d.width),
+      "heading"               -> Seq(d.leHeading, d.heHeading),
+      "elevation"             -> Seq(d.leElevation, d.heElevation),
+      "displacement"          -> Seq(d.leDisplacedThreshold, d.heDisplacedThreshold),
       "type"                  -> "runway"
     )
 

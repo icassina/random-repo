@@ -32,51 +32,53 @@ root.TableResults = (config) ->
 
   noNotify = false
   selectCallbacks = []
+  unselectCallbacks = []
 
   dataTable = $("##{target}").DataTable({
     scrollY:          height
     sScrollY:         height
     bScrollCollapse:  false
     scrollCollapse:   false
-    paging:           false
+    paging:           true
     scroller:         true
+    deferRender:      true
+    select: {
+      style:  'single'
+    }
     rowId:            rowId
     columns:          columns
   })
 
-  getSelectedData = () ->
-    idx = dataTable.row('.selected').index()
-    data = dataTable.row(idx).data()
-    data
-
-  notifySelected = (data) ->
+  notify = (observers) -> (data) ->
     if noNotify == false
-      for cb in selectCallbacks
+      for cb in observers
         cb(data)
 
+  notifySelected    = notify(selectCallbacks)
+  notifyUnselected  = notify(unselectCallbacks)
+
   unselect = () ->
-    $("##{target} tbody tr.selected").removeClass('selected active')
-    ### TODO: callback, unselect in map!! ###
+    noNotify = true
+    dataTable.rows({selected: true}).deselect().draw(false)
+    noNotify = false
 
   select = (id) ->
     noNotify = true
-    unselect()
-    row = dataTable.row("##{id}")
-    data = row.data()
-    $("##{id}").addClass('selected active')
-    $('.dataTables_scrollBody').scrollTo("##{id}")
+    dataTable.row("##{id}").select().scrollTo()
     noNotify = false
 
-  $("##{config.target} tbody").on('click', 'tr', () ->
-    elem = $(this)
-    if elem.hasClass('selected')
-      # already selected -> unselect
-      elem.removeClass('selected active')
-    else
-      # not the same row -> unselect other, then select this
-      unselect()
-      elem.addClass('selected active')
-      data = getSelectedData()
+  dataTable.on('deselect', (e, dt, type, indexes) ->
+    for idx in indexes
+      row = dataTable.row(idx)
+      data = row.data()
+      $(row.node()).removeClass('active')
+      notifyUnselected(data)
+  )
+  dataTable.on('select', (e, dt, type, indexes) ->
+    for idx in indexes
+      row = dataTable.row(idx)
+      data = row.data()
+      $(row.node()).addClass('active')
       notifySelected(data)
   )
 
@@ -88,17 +90,21 @@ root.TableResults = (config) ->
   search = (query) ->
     dataTable.search(query).draw(true)
 
-  searchColumn = (idx) -> (query) ->
-    dataTable.columns(idx).search(query).draw(true)
+  onSelect = (cb) ->
+    selectCallbacks.push(cb)
+    this
+
+  onUnselect = (cb) ->
+    unselectCallbacks.push(cb)
+    this
 
   {
-    update: update
-    selectedData: getSelectedData
-    onSelectRow:  (cb) -> selectCallbacks.push(cb)
-    search: search
-    searchColumn: searchColumn
-    select: select
-    unselect: unselect
+    update:         update
+    onSelectRow:    onSelect
+    onUnselectRow:  onUnselect
+    search:         search
+    select:         select
+    unselect:       unselect
   }
 
 ### AirportsResults(config)
@@ -119,16 +125,17 @@ root.AirportsResults = (config) ->
   tableResults = TableResults({
     logger: config.logger
     target: 'airports-results-table'
-    height: '33vh'
+    height: '25vh'
     select: true
     rowId: idFn
     columns: [
-      { data: 'id' }
       { data: 'ident' }
-      { data: 'name' }
-      { data: 'airportType' }
+      { data: 'name',         render: render.trim(24) }
+      { data: 'airportType',  render: render.airport.type }
       { data: 'isoRegion' }
-      { data: 'municipality' }
+      { data: 'municipality', render: render.trim(24) }
+      { data: 'elevation',    render: (v) -> render.option(v) }
+      { data: 'codes',        render: (v) -> render.small(render.list(v)) }
     ]
   })
 
@@ -162,20 +169,18 @@ root.RunwaysResults = (config) ->
   tableResults = TableResults({
     logger: config.logger
     target: 'runways-results-table'
-    height: '22vh'
+    height: '26vh'
     rowId: idFn
     columns: [
       { data: 'airportIdent' }
-      { data: 'id' }
-      { data: 'leIdent' }
-      { data: 'heIdent' }
-      { data: 'surface' }
-      { data: 'length' }
-      { data: 'width' }
+      { data: 'ident',        render: render.pairs }
+      { data: 'surface',      render: render.trim(24) }
+      { data: 'dimensions',   render: render.pairs }
       { data: 'closed',       render: (b) -> render.boolean('Open')(! b) }
       { data: 'lighted',      render: (b) -> render.boolean('Lighted')(b) }
-      { data: 'leHeading' }
-      { data: 'leElevation' }
+      { data: 'heading',      render: render.pairs }
+      { data: 'elevation',    render: render.pairs }
+      { data: 'displacement', render: render.pairs }
     ]
   })
   selectRunway = (runway) ->

@@ -41,7 +41,6 @@ root.Map = () ->
     star:     (def) -> new ol.style.RegularShape($.extend(def, {points: 5, angle: 0, radius2: (def.radius / 2)}))
   }
 
-
   mkStyle = (e) -> (kind) -> (scale) ->
     switch(kind)
         when 'highlight'
@@ -225,6 +224,11 @@ root.Map = () ->
 
   map = new ol.Map({
     target: 'map'
+    controls: ol.control.defaults({
+      attributionOptions: {
+        collapsible: false
+      }
+    })
   })
   map.addLayer(osmTiles)
   map.addLayer(airportsLayer)
@@ -244,118 +248,16 @@ root.Map = () ->
     element.popover({
       animation:  false
       html:       true
-      content:    content(data, coords)
+      content:    content(data)
     })
     element.popover('show')
 
-  airportContent = (data, coords) ->
-    a = data
-    """
-      <ul class="list-group box-shadow">
-        <li class="list-group-item list-group-item-info">
-          <span class="feature-name"><strong>#{symbols.airplane} #{a.name}</strong></span>
-          <span class="feature-code pull-right label label-default">#{a.ident}</span>
-        </li>
-        <li class="list-group-item popover-table-info">
-          <table class="table table-airport-info">
-            <tbody>
-              <tr>
-                <td>Type:</td>
-                <td colspan="3"><strong>#{a.airportType}</strong></td>
-              </tr>
-              <tr>
-                <td>Region:</td>
-                <td colspan="3">#{render.option(a.isoRegion, 'strong')}</td>
-              </tr>
-              <tr>
-                <td>Municipality:</td>
-                <td colspan="3">#{render.option(a.municipality, 'strong')}</td>
-              </tr>
-              <tr>
-                <td>Position:</td>
-                <td colspan="3">#{render.position(coords)}</td>
-              </tr>
-              <tr>
-                <td>Elevation:</td>
-                <td colspan="3">#{render.feetOpt(a.elevation)}</td>
-              </tr>
-              <tr>
-                <td>Scheduled Service:</td>
-                <td colspan="3">#{render.boolean('Scheduled service')(a.scheduledService)}</td>
-              </tr>
-              <tr>
-                <td>Codes:</td>
-                <td>GPS: #{render.option(a.gpsCode, 'strong')}</td>
-                <td>IATA: #{render.option(a.iataCode, 'strong')}</td>
-                <td>Local: #{render.option(a.localCode, 'strong')}</td>
-              </tr>
-              <tr>
-                <td>Links:</td>
-                <td>#{render.link(a.homeLink, "Home: #{symbols.rArrow}", "Home: #{symbols.emptySet}")}</td>
-                <td colspan="2">#{render.link(a.wikipediaLink, "Wikipedia: #{symbols.rArrow}", "Wikipedia: #{symbols.emptySet}")}</td>
-              </tr>
-              <tr>
-                <td>Keywords:</td>
-                <td colspan="3"#{render.option(a.keywords)}</td>
-              </tr>
-          </tbody>
-        </table>
-      </li>
-    </ul>
-    """
-
-  runwayContent = (data, coords) ->
-    r = data
-    """
-      <ul class="list-group box-shadow">
-        <li class="list-group-item list-group-item-info">
-          <span class="feature-name"><strong>#{symbols.upArrow} #{render.runway.ident(r)}</span>
-          <span class="feature-code pull-right label label-default">#{render.runway.open(r)} #{render.runway.lighted(r)}</span>
-        </li>
-        <li class="list-group-item popover-table-info">
-          <table class="table">
-            <tbody>
-              <tr>
-                <td>Surface:</td>
-                <td colspan="2"><strong>#{r.surface}</strong></td>
-              </tr>
-              <tr>
-                <td>Positions:</td>
-                <td>#{render.position(r.lePosition)}</td>
-                <td>#{render.position(r.hePosition)}</td>
-              </tr>
-              <tr>
-                <td>Dimensions:</td>
-                <td>#{render.feetOpt(r.length)}</td>
-                <td>#{render.feetOpt(r.width)}</td>
-              </tr>
-              <tr>
-                <td>Elevations:</td>
-                <td>#{render.feetOpt(r.leElevation)}</td>
-                <td>#{render.feetOpt(r.heElevation)}</td>
-              </tr>
-              <tr>
-                <td>Headings:</td>
-                <td>#{render.feetOpt(r.leHeading)}</td>
-                <td>#{render.feetOpt(r.heHeading)}</td>
-              </tr>
-              <tr>
-                <td>Disp. Threshs.:</td>
-                <td>#{render.feetOpt(r.leDisplacement)}</td>
-                <td>#{render.feetOpt(r.heDisplacement)}</td>
-              </tr>
-            </tbody>
-          </table>
-        </li>
-      </ul>
-    """
-
   showAirportPopup = (data, coords) ->
-    showPopup(airportContent)(data, coords)
+    showPopup(render.airport.popupContent)(data, coords)
     $('.popover-content').addClass('airport-content')
 
   showRunwayPopup = (data, coords) ->
-    showPopup(runwayContent)(data, coords)
+    showPopup(render.runway.popupContent)(data, coords)
     $('.popover-content').addClass('runway-content')
 
   hideHoverInfo = () ->
@@ -364,8 +266,8 @@ root.Map = () ->
     mapHoverCode.attr('class', 'pull-right label label-default')
 
   showAiportHoverInfo = (data) ->
-    mapHoverInfo.html("""#{symbols.airplane} #{data.name}""")
-    mapHoverCode.html("""#{data.ident}""")
+    mapHoverInfo.html(render.airport.ident(data))
+    mapHoverCode.html(render.airport.code(data))
 
   showRunwayHoverInfo = (data) ->
     mapHoverInfo.html("""#{symbols.upArrow} #{render.runway.ident(data)} #{data.surface}""")
