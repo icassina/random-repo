@@ -24,8 +24,15 @@ root = requires ? this
 ###
 root.Map = () ->
   noNotify = false
-  airportCallbacks = []
-  runwayCallbacks = []
+  airportCallbacks = {
+    selected: []
+    unselected: []
+  }
+  runwayCallbacks = {
+    selected: []
+    unselected: []
+  }
+  ghostRunway = undefined
 
   mapHoverCode = $('#map-hover-code')
   mapHoverInfo = $('#map-hover-info')
@@ -68,27 +75,24 @@ root.Map = () ->
           predef: {}
           highlight: {}
           selected: {}
-          #predef:     { zoom_0: mkStyle(entry)('predef')(1.0) }
-          #highlight:  { zoom_0: mkStyle(entry)('highlight')(1.0) }
-          #selected:   { zoom_0: mkStyle(entry)('selected')(1.0) }
         }
 
     result
     
   stylesDef = {
     airports: {
-      large_airport:  { color: {r: 217, g: 100, b:  89}, radius: 18, shape: 'circle',   index: 9 }
-      medium_airport: { color: {r: 242, g: 174, b: 114}, radius: 14, shape: 'circle',   index: 8 }
-      small_airport:  { color: {r: 242, g: 227, b: 148}, radius: 10, shape: 'circle',   index: 7 }
-      seaplane_base:  { color: {r:  82, g: 118, b: 183}, radius:  8, shape: 'circle',   index: 6 }
-      balloonport:    { color: {r: 172, g:  83, b: 147}, radius:  8, shape: 'circle',   index: 5 }
-      heliport:       { color: {r: 140, g:  70, b:  70}, radius:  8, shape: 'plus',     index: 5 }
-      closed:         { color: {r:  50, g:  50, b:  50}, radius:  6, shape: 'cross',    index: 4 }
+      large_airport:  { color: {r:  80, g: 250, b:  80}, radius: 20, shape: 'circle',   index: 9 }
+      medium_airport: { color: {r: 220, g: 160, b:   0}, radius: 16, shape: 'circle',   index: 8 }
+      small_airport:  { color: {r: 250, g:  80, b: 150}, radius: 12, shape: 'circle',   index: 7 }
+      seaplane_base:  { color: {r:  80, g:  80, b: 180}, radius: 10, shape: 'circle',   index: 6 }
+      balloonport:    { color: {r:  80, g:  80, b:  80}, radius: 10, shape: 'circle',   index: 5 }
+      heliport:       { color: {r: 140, g:  40, b:  40}, radius: 10, shape: 'plus',     index: 5 }
+      closed:         { color: {r:  40, g:  40, b:  40}, radius:  8, shape: 'cross',    index: 4 }
     }
     runways: {
-      lighted:        { color: {r:  50, g: 150, b:  70}, radius:  8, shape: 'square',   index: 3 }
-      notLighted:     { color: {r:  50, g:  80, b: 180}, radius:  8, shape: 'triangle', index: 2 }
-      closed:         { color: {r:  50, g:  50, b:  50}, radius:  6, shape: 'cross',    index: 1 }
+      lighted:        { color: {r: 200, g: 200, b:  60}, radius:  8, shape: 'square',   index: 6 }
+      notLighted:     { color: {r:  50, g:  80, b: 180}, radius:  8, shape: 'triangle', index: 5 }
+      closed:         { color: {r:  40, g:  40, b: 120}, radius:  6, shape: 'cross',    index: 1 }
     }
   }
 
@@ -294,12 +298,12 @@ root.Map = () ->
       (a) ->
         panTo(coords)(() -> showAirportPopup(data, coords))
         if noNotify == false
-          for cb in airportCallbacks
+          for cb in airportCallbacks.selected
             cb(data)
       (r) ->
         panTo(coords)(() -> showRunwayPopup(data, coords))
         if noNotify == false
-          for cb in runwayCallbacks
+          for cb in runwayCallbacks.selected
             cb(data)
     )
   )
@@ -307,6 +311,19 @@ root.Map = () ->
     element = $(popup.getElement())
     element.popover('destroy')
     popup.setPosition(undefined)
+    feat = event.element
+    data = feat.getProperties()
+    if ghostRunway? and data.type == 'runway' and data.id == ghostRunway.getId()
+      ghostRunway = undefined
+    if noNotify == false
+      featFold(feat)(
+        (a) ->
+          for cb in airportCallbacks.unselected
+            cb(data)
+        (r) ->
+          for cb in runwayCallbacks.unselected
+            cb(data)
+      )
   )
 
   selectFeat = (feat) ->
@@ -321,7 +338,12 @@ root.Map = () ->
       selectFeat(feat)
     else
       feat = airportsSource.getFeatureById(runway.airportRef)
-      showRunwayPopup(runway, feat.getGeometry().getCoordinates())
+      ghostRunway = new ol.Feature({
+        geometry: feat.getGeometry()
+      })
+      ghostRunway.setId(runway.id)
+      ghostRunway.setProperties(runway)
+      selectFeat(ghostRunway)
 
 
   select = (type) -> (data) ->
@@ -346,12 +368,6 @@ root.Map = () ->
       when 'runway'  then showRunwayHoverInfo(data)
   )
   highlighted.on('remove', hideHoverInfo)
-    
-  registerAirportCallback = (cb) ->
-    airportCallbacks.push(cb)
-
-  registerRunwayCallback = (cb) ->
-    runwayCallbacks.push(cb)
 
   updateAirports = (airportsFeatures) ->
     airportsSource.clear()
@@ -383,15 +399,20 @@ root.Map = () ->
     runwaysSource.clear()
     runwaysSource.addFeatures(geoJSON.readFeatures(features))
 
-  map.updateSize()
+  registerCallback = (observers) -> (cb) ->
+    observers.push(cb)
+    this
+
   $('#map-hover-container').removeClass('hidden')
 
   {
-    updateAirports: updateAirports
-    updateRunways: updateRunways
-    onAirportSelected: registerAirportCallback
-    onRunwaySelected: registerRunwayCallback
-    selectAirport: select('airport')
-    selectRunway: select('runway')
-    unselect: unselect
+    updateAirports:       updateAirports
+    updateRunways:        updateRunways
+    onAirportSelected:    registerCallback(airportCallbacks.selected)
+    onAirportUnselected:  registerCallback(airportCallbacks.unselected)
+    onRunwaySelected:     registerCallback(runwayCallbacks.selected)
+    onRunwayUnselected:   registerCallback(runwayCallbacks.unselected)
+    selectAirport:        select('airport')
+    selectRunway:         select('runway')
+    unselect:             unselect
   }

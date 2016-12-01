@@ -68,9 +68,12 @@ Once the application is setup and running, point a web browser to `http://localh
 
 The application is composed of three pages:
 
-* `http://localhost:9000`: index page, with just a table showing how many entries each table has.
-* `http://localhost:9000/reports`: reports page, with four tables showing the reports.
-* `http://localhost:9000/query`: query page, with country search box, two tables, a map and a log panel.
+* `http://localhost:9000`: index page, with just a table showing how many
+  entries each table has.
+* `http://localhost:9000/reports`: reports page, with four tables showing the
+  reports.
+* `http://localhost:9000/query`: query page, with country search box, two
+  tables, a map and a log panel.
 
 ### Index page
 
@@ -118,8 +121,9 @@ So, for example, the "TURF" surface (case sensitive) is seen:
 * 1 time in Germany
 * 1 time in United Kingdom
 
-Again, full country information is shown, along with the surface name and how many runways use that identifier in that country.
-By default the table is ordered by
+Again, full country information is shown, along with the surface name and how
+many runways use that identifier in that country.  By default the table is
+ordered by
 * the number of runways sharing the same identifier in that particular country,
 * if the number is the same, using the alphabetical order of the surface identifier
 * lastly, the country code
@@ -136,27 +140,34 @@ The most interactive page.
 
 You'll notice that the bavigation bar has been augmented with a search box and
 a submit button, and a misterious light blue and gray area on the right side.
-The search box should be glowing blue. An indication that it is the starting point of the interaction.
+The search box should be glowing blue. An indication that it is the starting
+point of the interaction.
 
 Other elements in the pages are:
 
-* a map, on the upper-right side, centered on Europe (if you zoom in, you'll notice that Netherland is in the center);
-* a black-ish area on the bommo-left side, showing two entries, one in green, the other in blue. It shows some logs;
-* two empty tables labeled "Airports" and "Runways" in the upper-left and bottom-right corners respectively.
+* a map, on the upper-right side, centered on Europe (if you zoom in, you'll
+  notice that Netherland is in the center);
+* a black-ish area on the bommo-left side, showing two entries, one in green,
+  the other in blue. It shows some logs;
+* two empty tables labeled "Airports" and "Runways" in the upper-left and
+  bottom-right corners respectively.
 
 #### Search country
 
-As you click on the "Search country…" box, a drop-down menu appears, with a list of countries.
-As you start typing, the list shrinks showing only the countries matching the string the search box.
-Note: it will use the name, the code and the keywords of each country to find a match.
+As you click on the "Search country…" box, a drop-down menu appears, with a
+list of countries.  As you start typing, the list shrinks showing only the
+countries matching the string the search box.  Note: it will use the name, the
+code and the keywords of each country to find a match.
 
-As the user hits enter, the first country matching the criteria is selected and
-three requests are sent to the server, as shown in the logs box (here using Netherland as example):
+As the you hit enter, the first country matching the criteria is selected and
+three requests are sent to the server, as shown in the logs box (here using
+Netherland as example):
 ```
 -> GET /api/country/NL
 <- GET /api/country/NL
 ```
-The client asks for full information about the country, then requests the corresponding list of airports and runways:
+The client asks for full information about the country, then requests the
+corresponding list of airports and runways:
 ```
 -> GET /api/airports/NL/geojson
 -> GET /api/runways/NL
@@ -168,21 +179,24 @@ It then populates the map and the two tables with airports and runways.
 
 #### The Airports table
 
-Once populated, the Airports table displays in the title which country the airports belong to, in this example it shows:
+Once populated, the Airports table displays in the title which country the
+airports belong to, in this example it shows:
 
 `Airports in Netherlands [NL/EU]`
 
 It also display one airport per row, with the following columns:
 
-* ID
 * Ident
 * Name
 * Type
 * Region
 * Municipality
+* Elevation
+* Codes (GPS, IATA, Local)
 
-The user can scroll down to look for more entries, or use the search box in the
-upper right corner of the table to filter the results.
+You can scroll down to look for more entries, or use the search box in the
+upper right corner of the table to filter the results. Clicking on a column
+header will sort the data according to that column.
 
 #### The Runways table
 
@@ -190,15 +204,56 @@ Like the Airports table, it displays in the title which country the runways belo
 
 The information shown by this table is:
 * Airport (its Ident)
-* ID
 * Idents
 * Surface
-* Length (in feet)
-* Width (in feet)
+* Dimensions (Length and Width)
 * Open (green/check is yes, red/cross is no)
 * Lighted (green/check is yes, red/cross is no)
-* Headings (in degrees)
-* Elevations (in feet)
+* Headings ("le" and "he", in degrees from true north)
+* Elevations ("le" and "he", in feet)
+* Displaced Threshold ("le" and "he", in feet)
+
+Like the Airports table, you can scroll and search and reorder the table.
+
+
+#### The Map
+
+The map has three visible buttons on the top-left, top-right and bottom-left
+corner:
+
+* bottom-left: it shows the information about the tiles used (OpenStreetMap)
+* top-left: the '+' sign will zoom in, while the '-' sign will zoom out. You
+  can also use the mouse's scroll wheel.
+* top-right: enabled the map in full screen. A cross sign on the top-right
+  corner will bring you back to the original view.
+
+When populated with airports and runways of a country, the map will show some
+markers related to them and also change the view so that all the markers will
+fit within the map.
+
+Legend:
+* Circle:
+  * grey, very small: balloonport
+  * blue, very small: seaplane base
+  * pink, small: small airport
+  * orange, medium: medium airport
+  * green, large: large airport
+* Plus:
+  * brown, small: heliport
+* Cross:
+  * dark grey, very small: closed airport
+  * dark blue, very small: closed runway
+* Triangle:
+  * blue, medium: open and not lighted runway
+* Square:
+  * yellow, medium: open and lighted runway
+
+
+Holding the mouse's left button and moving it withing the map will move the map.
+Clicking on a marker will select it and show the full information on a popup next to the marker.
+Selecting a marker will also select it on the relevant table (airports or runways).
+Clicking anywhere on the map will remove the popup.
+
 
 Clicking on a row will select that airport, instructing the Runways table to
 show runways belonging to that airport (by applying the airport Ident in the

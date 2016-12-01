@@ -74,16 +74,21 @@ Controller = (config) ->
       logger.warn("#{logLine}: runway position not found!")
     airportsResults.unselect()
 
-  # airport selected from map -> select on table
-  map.onAirportSelected((airport) ->
-    airportSelected(airport)
-    airportsResults.selectAirport(airport)
-  )
-  # runway selected from map -> select on table
-  map.onRunwaySelected((runway) ->
-    runwaySelected(runway)
-    runwaysResults.selectRunway(runway)
-  )
+  map
+    .onAirportSelected((airport) ->
+      airportSelected(airport)
+      airportsResults.selectAirport(airport)
+    )
+    .onRunwaySelected((runway) ->
+      runwaySelected(runway)
+      runwaysResults.selectRunway(runway)
+    )
+    .onAirportUnselected((airport) ->
+      airportsResults.unselect()
+    )
+    .onRunwayUnselected((runway) ->
+      runwaysResults.unselect()
+    )
 
   airportsResults
     .onSelectRow((airport) ->
@@ -91,7 +96,6 @@ Controller = (config) ->
       map.selectAirport(airport)
     )
     .onUnselectRow((airport) ->
-      runwaysResults.search("")
       map.unselect()
     )
 
