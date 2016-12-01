@@ -177,6 +177,28 @@ corresponding list of airports and runways:
 
 It then populates the map and the two tables with airports and runways.
 
+##### Fuzzy Search
+
+If the text entered in the search box does not match anything known by the
+client (i.e. it is mispelled), the reuquest will be slightly different.
+Let's say we mispelled Netherlands as 'neitherlamd'
+
+```
+-> GET /api/country/fuzzy/neitherlamd
+<- GET /api/country/fuzzy/neitherlamd
+-> GET /api/airports/NL/geojson
+-> GET /api/runways/NL
+<- GET /api/airports/NL/geojson
+<- GET /api/airports/NL
+```
+
+Of course, random text won't find anything useful:
+
+```
+-> GET /api/country/fuzzy/randomtext
+<- GET /api/country/fuzzy/randomtext: error: Not Found
+```
+
 #### The Airports table
 
 Once populated, the Airports table displays in the title which country the
