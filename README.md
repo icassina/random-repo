@@ -249,15 +249,45 @@ Legend:
   * yellow, medium: open and lighted runway
 
 
-Holding the mouse's left button and moving it withing the map will move the map.
-Clicking on a marker will select it and show the full information on a popup next to the marker.
-Selecting a marker will also select it on the relevant table (airports or runways).
-Clicking anywhere on the map will remove the popup.
+Holding the mouse's left button and moving it withing the map will move the
+map.  Clicking on a marker will select it and show the full information on a
+popup next to the marker.  Selecting a marker will also select it on the
+relevant table (airports or runways).  Clicking anywhere on the map will remove
+the popup and unselect it on the respective table.
 
+When passing over a marker with the mouse, some information will be shown in
+the upper right blue and grey rectangle, that just stopped being mysterious.
+On airports, it will show and airplane and the airport name on the blue area,
+and it's ident in the grey area.  On runways, it will show an upper arrow and
+the runways idents (le | he) in the blue area and it's status (open | lighted)
+in the grey area.
+
+You will notice that the country search box and the information area will
+appear in the fullscreen version of the map as well.
+
+#### More interactions
+
+##### Airports table
 
 Clicking on a row will select that airport, instructing the Runways table to
 show runways belonging to that airport (by applying the airport Ident in the
 search box). The map will also have that airport selected and centered, and a
-popup will show more information about the airport.
+popup will show more information about the airport as if you clicked on the
+airport marker.
+Clicking on the selected airport will have the effect of unselect it, and
+remove the popup information in the map.
+
+#### Runways table
+
+Likewise, clicking on a row will select the corresponding marker on the map…
+except that many runways do not have any position information and are not shown
+on the map. To still be able to view the full information, a temporary marker
+will appear at the same position as the airport of that runway, and the popup
+will appear next to it. Unselecting the runway will make the marker disappear
+again.
+
+
+Enjoy and profit!
+-----------------
 
 
