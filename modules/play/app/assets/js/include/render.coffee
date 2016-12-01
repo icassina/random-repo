@@ -115,14 +115,14 @@ root.render = do () ->
   airportLogLine = (airport) ->
     extraInfo = ->
       pre = if airport.municipality? then "in #{airport.municipality}" else "in"
-      "#{pre} #{airport.isoRegion} (#{airport.airportType})"
+      "#{pre} #{airport.isoRegion} (#{airportType(airport.airportType)})"
 
     """
       #{symbols.airplane} ##{airport.id} [#{airport.ident}] #{airport.name} #{extraInfo()}
     """
 
   runwayLogLine = (runway) ->
-    ident = runwayIdent(runway)
+    ident = """#{option(runway.leIdent, 'strong')} | #{option(runway.heIdent, 'strong')}"""
     length = utils.foldOpt(runway.length)('')((l) -> ", length: #{l}")
     width = utils.foldOpt(runway.width)('')((w) -> ", width: #{w}")
     lighted = ", lighted: #{runwayLighted(runway)}"
@@ -149,7 +149,7 @@ root.render = do () ->
               </tr>
               <tr>
                 <td>Type:</td>
-                <td colspan="3">#{strong(a.airportType)}</td>
+                <td colspan="3">#{strong(airportType(a.airportType))}</td>
               </tr>
               <tr>
                 <td>Region:</td>
