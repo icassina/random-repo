@@ -9,7 +9,6 @@ root = exports ? this
 #   maxLogLines: <int>  number of lines to display
 #
 # ->
-#   trace:  (line) ->
 #   debug:  (line) ->
 #   info:   (line) ->
 #   warn:   (line) ->
@@ -25,12 +24,11 @@ root.Logger = (config) ->
 
   level2class = (lvl) ->
     switch (lvl)
-      when 'trace'  then 'text-muted'
       when 'debug'  then 'text-muted'
-      when 'info'   then 'text-warning'
+      when 'info'   then 'text-muted'
       when 'in'     then 'text-primary'
       when 'out'    then 'text-success'
-      when 'warn'   then 'text-danger'
+      when 'warn'   then 'text-warning'
       when 'err'    then 'text-danger'
       else ''
 
@@ -58,10 +56,9 @@ root.Logger = (config) ->
     _log('in') ("#{symbols.lArrow} GET #{url}")
 
   _err  = (url, status, error) ->
-    _log('err') ("#{symbols.lArrow} GET #{url}: Error: #{status} #{error}")
+    _log('err') ("#{symbols.lArrow} GET #{url} #{status}: #{error}")
 
   {
-    trace:  _log('trace')
     debug:  _log('debug')
     info:   _log('info')
     warn:   _log('warn')
