@@ -14,7 +14,7 @@ GET     /ws                                 controllers.UI.ws
 GET     /api/stats                          controllers.API.stats
 GET     /api/countries                      controllers.API.countries
 GET     /api/country/:countryCode           controllers.API.country(countryCode: String)
-#GET     /api/country/:query/fuzzy           controllers.API.countryFuzzy(query: String)
+GET     /api/country/fuzzy/:query           controllers.API.countryFuzzy(query: String)
 GET     /api/airports/:countryCode          controllers.API.airports(countryCode: String)
 GET     /api/runways/:countryCode           controllers.API.runways(countryCode: String)
 GET     /api/airports/:countryCode/geojson  controllers.API.airportsGeoJSON(countryCode: String)

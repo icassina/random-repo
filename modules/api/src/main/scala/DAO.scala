@@ -11,6 +11,7 @@ import scala.math.BigDecimal
 trait DAO {
   def stats(implicit ec: DAOExecutionContext): Future[Stats]
   def country(countryCode: String)(implicit ec: DAOExecutionContext): Future[Option[Country]]
+  def countryFuzzy(query: String)(implicit ec: DAOExecutionContext): Future[Option[Country]]
   def countries(implicit ec: DAOExecutionContext): Future[Seq[CountryDef]]
   def airportsByCountry(countryCode: String)(implicit ec: DAOExecutionContext): Future[Option[AirportsByCountry]]
   def runwaysByCountry(countryCode: String)(implicit ec: DAOExecutionContext): Future[Option[RunwaysByCountry]]

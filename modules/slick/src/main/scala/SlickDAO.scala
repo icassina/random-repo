@@ -28,6 +28,9 @@ class SlickDAO @Inject()(db: Database) extends DAO with Tables {
   def country(countryCode: String)(implicit ec: DAOExecutionContext): Future[Option[Country]] =
     db.run(Countries.filter(_.code === countryCode).result.headOption)
 
+  def countryFuzzy(str: String)(implicit ec: DAOExecutionContext): Future[Option[Country]] =
+    db.run(queries.countryFuzzy(str).headOption)
+
   def countries(implicit ec: DAOExecutionContext): Future[Seq[CountryDef]] =
     db.run(Countries.result.map(_.map(c => CountryDef(c.code, c.name, c.keywords))))
 
@@ -125,17 +128,13 @@ class SlickDAO @Inject()(db: Database) extends DAO with Tables {
         (i, q.map(_.id).length)
       }.sortBy(_._2.desc)
 
-    def countries(str: String) = {
+    // Not actually used, as it is handled in the client. This could be much more powerful.
+    def countryFuzzy(str: String) = {
+      val query = str.split(" ").mkString(" & ")
       sql"""
-        SELECT * FROM countries WHERE country_name % $str
+        SELECT * FROM countries WHERE code % $str OR name % $str OR keywords @@ to_tsquery($query) ORDER BY name <-> $str LIMIT 1
       """.as[Country]
     }
   }
-
-
-  private def pickFun[T](countryStr: String)(eq: LiteralColumn[String] => T, otherwise: String => T): T =
-    if (countryStr.value.length == 2) eq(new LiteralColumn(countryStr)) else otherwise(countryStr)
-
-  //private def expandKeywords(kws: Option[String]): Seq[String] = kws.map(_.split(",").toSeq.map(_.trim)).getOrElse(Seq.empty)
 }
 

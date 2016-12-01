@@ -31,6 +31,12 @@ class API @Inject() (dao: DAO, daoEC: DAOExecutionContext) extends Controller {
     )
   }
 
+  def countryFuzzy(query: String) = Action.async {
+    dao.countryFuzzy(query).map(country =>
+      country.fold[Result](NotFound)(country => Ok(Json.toJson(country)))
+    )
+  }
+
   def airports(countryCode: String) = Action.async {
     dao.airportsByCountry(countryCode).map(airports =>
       airports.fold[Result](NotFound)(airports => Ok(Json.toJson(airports)))
