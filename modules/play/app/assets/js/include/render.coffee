@@ -78,7 +78,7 @@ root.render = do () ->
 
   ### ident ###
   airportIdent = (airport) ->
-    strong("""#{symbols.airplane} #{airport.name}""")
+    strong("""#{symbols.airplane} #{trim(58)(airport.name)}""")
 
   runwayIdent = (runway) ->
     """#{strong(symbols.upArrow)} #{option(runway.leIdent, 'strong')} | #{option(runway.heIdent, 'strong')}"""
