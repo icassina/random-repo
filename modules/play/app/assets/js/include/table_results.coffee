@@ -184,6 +184,7 @@ root.RunwaysResults = (config) ->
     ]
   })
   selectRunway = (runway) ->
+    tableResults.search("")
     tableResults.select(idFn(runway))
 
   updateRunways = (data) ->
