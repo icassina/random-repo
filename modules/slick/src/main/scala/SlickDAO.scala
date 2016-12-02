@@ -86,7 +86,11 @@ class SlickDAO @Inject()(db: Database) extends DAO with Tables {
   def runwaySurfacesByCountry(implicit ec: DAOExecutionContext): Future[Seq[RunwaySurfacesCountByCountry]] =
     db.run(queries.countSurfacesByCountry.result.map(_.map(RunwaySurfacesCountByCountry.tupled)))
 
+  // it makes more sense to count le_ident + he_ident pairs, a runway has generally two ways.
   def topRunwayIdents(implicit ec: DAOExecutionContext): Future[Seq[RunwayIdentsCount]] =
+    db.run(queries.countIdents2.map(_.map(RunwayIdentsCount.tupled)))
+
+  def topRunwayIdentsSingle(implicit ec: DAOExecutionContext): Future[Seq[RunwayIdentsCount]] =
     db.run(queries.countIdents.take(10).result.map(_.map(RunwayIdentsCount.tupled)))
 
   def close() = Future.successful(db.close())
@@ -127,6 +131,17 @@ class SlickDAO @Inject()(db: Database) extends DAO with Tables {
       Runways.groupBy(_.leIdent.getOrElse("")).map { case (i, q) =>
         (i, q.map(_.id).length)
       }.sortBy(_._2.desc)
+
+    val countIdents2 =
+      sql"""
+        SELECT
+          (coalesce(le_ident, '') || '/' || coalesce(he_ident, '')) AS ident,
+          count(1) AS runways
+        FROM runways
+        GROUP BY (coalesce(le_ident, '') || '/' || coalesce(he_ident, ''))
+        ORDER BY runways DESC
+        LIMIT 10
+      """.as[(String, Int)]
 
     // Not actually used, as it is handled in the client. This could be much more powerful.
     def countryFuzzy(str: String) = {
