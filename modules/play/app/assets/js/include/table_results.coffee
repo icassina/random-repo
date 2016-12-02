@@ -135,7 +135,7 @@ root.AirportsResults = (config) ->
       { data: 'airportType',  render: render.airport.type }
       { data: 'isoRegion' }
       { data: 'municipality', render: render.trim(24) }
-      { data: 'elevation',    render: (v) -> render.option(v) }
+      { data: 'elevation',    render: (v) -> render.feetAbbr(v) }
       { data: 'codes',        render: (v) -> render.small(render.list(v)) }
     ]
   })
@@ -174,14 +174,14 @@ root.RunwaysResults = (config) ->
     rowId: idFn
     columns: [
       { data: 'airportIdent' }
-      { data: 'ident',        render: render.pairs }
+      { data: 'ident',        render: (v) -> render.pairs(utils.identity)(v, '|') }
       { data: 'surface',      render: render.trim(26) }
-      { data: 'dimensions',   render: render.pairs }
+      { data: 'dimensions',   render: (v) -> render.pairs(render.feetAbbr)(v) }
       { data: 'closed',       render: (b) -> render.boolean('Open')(! b) }
       { data: 'lighted',      render: (b) -> render.boolean('Lighted')(b) }
-      { data: 'heading',      render: render.pairs }
-      { data: 'elevation',    render: render.pairs }
-      { data: 'displacement', render: render.pairs }
+      { data: 'heading',      render: (v) -> render.pairs(render.option)(v) }
+      { data: 'elevation',    render: (v) -> render.pairs(render.feetAbbr)(v) }
+      { data: 'displacement', render: (v) -> render.pairs(render.feetAbbr)(v) }
     ]
   })
   selectRunway = (runway) ->

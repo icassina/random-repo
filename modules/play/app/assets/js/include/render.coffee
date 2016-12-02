@@ -62,8 +62,9 @@ root.render = do () ->
 
   small = (v) -> """<small>#{v}</small>"""
 
-  pairs = (values) ->
-    """#{option(values[0])} / #{option(values[1])}"""
+  pairs = (f) -> (values, sep) ->
+    sep = sep or '/'
+    """#{f(values[0])} #{sep} #{f(values[1])}"""
 
   list = (values) ->
     (option(v) for v in values).join(', ')
@@ -72,7 +73,18 @@ root.render = do () ->
 
   positionOpt = (coords) -> utils.foldOpt(coords)(symbols.emptySet)(position)
 
-  feetOpt = (value) -> utils.foldOpt(value)(symbols.emptySet)((v) -> """#{strong(v)} (ft)""")
+  feetToMetric = (value) -> (value * 0.3048).toFixed(2)
+
+  feetAbbr = (value) -> utils.foldOpt(value)(symbols.emptySet)((v) ->
+    m = feetToMetric(v)
+    """<abbr title="#{m} (m)">#{v}</abbr>"""
+  )
+
+  feetOpt = (value) -> utils.foldOpt(value)(symbols.emptySet)((v) -> 
+    m = feetToMetric(v)
+    abbr = """<abbr title="#{m} (m)">#{v}</abbr>"""
+    """#{strong(abbr)} (ft)"""
+  )
 
   degtOpt = (value) -> utils.foldOpt(value)(symbols.emptySet)((v) -> """#{strong(v)} (degt)""")
 
@@ -254,6 +266,7 @@ root.render = do () ->
     list:         list
     position:     position
     positionOpt:  positionOpt
+    feetAbbr:     feetAbbr
     feetOpt:      feetOpt
     degtOpt:      degtOpt
     runway:       {
