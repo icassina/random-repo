@@ -174,7 +174,7 @@ root.RunwaysResults = (config) ->
     rowId: idFn
     columns: [
       { data: 'airportIdent' }
-      { data: 'ident',        render: (v) -> render.pairs(utils.identity)(v, '|') }
+      { data: 'ident',        render: (v) -> render.pairs(render.option)(v, '|') }
       { data: 'surface',      render: render.trim(26) }
       { data: 'dimensions',   render: (v) -> render.pairs(render.feetAbbr)(v) }
       { data: 'closed',       render: (b) -> render.boolean('Open')(! b) }
