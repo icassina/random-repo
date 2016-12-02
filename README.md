@@ -243,7 +243,8 @@ Like the Airports table, you can scroll, search and reorder the table.
 The map has three visible buttons on the top-left, top-right and bottom-left
 corner:
 
-* bottom-left: it shows the information about the tiles used (OpenStreetMap)
+* bottom-right: it shows the information about the tiles used (OpenStreetMap).
+* bottom-left: the current view's scale, in metric units.
 * top-left: the '+' sign will zoom in, while the '-' sign will zoom out. You
   can also use the mouse's scroll wheel.
 * top-right: enabled the map in full screen. A cross sign on the top-right

@@ -242,6 +242,7 @@ root.Map = () ->
   })
 
   fullScreen = new ol.control.FullScreen()
+  scaleLine = new ol.control.ScaleLine()
 
   map = new ol.Map({
     target: 'map'
@@ -252,6 +253,7 @@ root.Map = () ->
   map.addOverlay(popup)
   map.setView(view)
   map.addControl(fullScreen)
+  map.addControl(scaleLine)
 
   map.getInteractions().extend([
     hoverInteraction
