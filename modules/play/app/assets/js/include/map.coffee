@@ -306,10 +306,16 @@ root.Map = () ->
     )
     view.setCenter(location)
 
+  center = (geom) ->
+    ol.extent.getCenter(geom.getExtent())
+
   selected = selectInteraction.getFeatures()
   selected.on('add', (event) ->
     feat = event.target.item(0)
-    coords = feat.getGeometry().getCoordinates()
+    geom = feat.getGeometry()
+    coords = geom.getCoordinates()
+    if geom.getType() == 'MultiPoint'
+      coords = center(geom)
     data = feat.getProperties()
     featFold(feat)(
       (a) ->
@@ -401,12 +407,21 @@ root.Map = () ->
         }
       }
       features: runways.filter((r) -> r.lePosition? or r.hePosition).map((r) ->
-        coords = if r.lePosition? then r.lePosition else r.hePosition
+        le = r.lePosition
+        he = r.hePosition
+        featureType = undefined
+        coords = undefined
+        if le? and he?
+          featureType = 'MultiPoint'
+          coords = [le, he]
+        else 
+          featureType = 'Point'
+          coords = if le? then le else he
         {
           id:     r.id
           type:   'Feature'
           geometry: {
-            type:         'Point'
+            type:         featureType
             coordinates:  coords
           }
           properties: r
