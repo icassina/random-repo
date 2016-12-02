@@ -46,7 +46,7 @@ Run sbt in the project's directory, with instructions to execute the database mi
 sbt "; project flyway; flywayMigrate"
 ```
 
-The database is now ready for use.
+The database is now ready to use.
 
 
 Running
@@ -156,8 +156,8 @@ Other elements in the pages are:
 
 As you click on the "Search country…" box, a drop-down menu appears, with a
 list of countries.  As you start typing, the list shrinks showing only the
-countries matching the string the search box.  Note: it will use the name, the
-code and the keywords of each country to find a match.
+countries matching the text in the search box.  Note: it will use the name,
+the code and the keywords of each country to find a match.
 
 As the you hit enter, the first country matching the criteria is selected and
 three requests are sent to the server, as shown in the logs box (here using
