@@ -174,7 +174,7 @@ root.RunwaysResults = (config) ->
     columns: [
       { data: 'airportIdent' }
       { data: 'ident',        render: render.pairs }
-      { data: 'surface',      render: render.trim(28) }
+      { data: 'surface',      render: render.trim(26) }
       { data: 'dimensions',   render: render.pairs }
       { data: 'closed',       render: (b) -> render.boolean('Open')(! b) }
       { data: 'lighted',      render: (b) -> render.boolean('Lighted')(b) }
