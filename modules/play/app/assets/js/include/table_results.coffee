@@ -57,6 +57,9 @@ root.TableResults = (config) ->
   notifySelected    = notify(selectCallbacks)
   notifyUnselected  = notify(unselectCallbacks)
 
+  search = (query) ->
+    dataTable.search(query).draw(true)
+
   unselect = () ->
     noNotify = true
     dataTable.rows({selected: true}).deselect().draw(false)
@@ -64,6 +67,7 @@ root.TableResults = (config) ->
 
   select = (id) ->
     noNotify = true
+    search("")
     dataTable.row("##{id}").select().scrollTo()
     noNotify = false
 
@@ -86,9 +90,6 @@ root.TableResults = (config) ->
     dataTable.clear()
     dataTable.search("")
     dataTable.rows.add(data).draw(true)
-
-  search = (query) ->
-    dataTable.search(query).draw(true)
 
   onSelect = (cb) ->
     selectCallbacks.push(cb)
@@ -184,7 +185,6 @@ root.RunwaysResults = (config) ->
     ]
   })
   selectRunway = (runway) ->
-    tableResults.search("")
     tableResults.select(idFn(runway))
 
   updateRunways = (data) ->
