@@ -25,6 +25,7 @@
 
 <logger name="play" level="INFO" />
 <logger name="application" level="DEBUG" />
+<logger name="controllers" level="DEBUG" />
 
   <!-- Useful debugging settings in slick -->
   <logger name="slick.jdbc.JdbcBackend.statement" level="INFO" />
