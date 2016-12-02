@@ -289,7 +289,7 @@ root.Map = () ->
     mapHoverCode.html(render.airport.code(data))
 
   showRunwayHoverInfo = (data) ->
-    mapHoverInfo.html("""#{symbols.upArrow} #{render.runway.ident(data)} #{data.surface}""")
+    mapHoverInfo.html("""#{render.runway.ident(data)} #{data.surface}""")
     mapHoverCode.removeClass('hidden')
     mapHoverCode.html("""#{render.runway.open(data)} #{render.runway.lighted(data)}""")
 
