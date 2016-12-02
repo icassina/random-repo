@@ -285,8 +285,8 @@ and it's ident in the grey area.  On runways, it will show an upper arrow and
 the runways idents (le | he) in the blue area and it's status (open | lighted)
 in the grey area.
 
-You will notice that the country search box and the __information area__ will
-appear in the fullscreen version of the map as well.
+You will notice that the country __search box__ and the __information area__
+will appear in the fullscreen version of the map as well.
 
 #### More interactions
 
